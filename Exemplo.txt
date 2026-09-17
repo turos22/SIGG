@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 Teste
+=======
+Ola, esse eh um arquivo de teste
+>>>>>>> 27071ee9d8e31aa2a8aee021f3833cc2f10c10a3
