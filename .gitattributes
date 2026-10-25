@@ -1,0 +1,24 @@
+# Fim de linha: o repositório guarda LF; cada SO recebe o formato nativo no checkout.
+* text=auto
+
+# Scripts de shell PRECISAM de LF (com CRLF o Linux/macOS acusa "bad interpreter")
+*.sh   text eol=lf
+mvnw   text eol=lf
+
+# Scripts do Windows PRECISAM de CRLF (com LF o cmd.exe se perde em rótulos e blocos)
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binários: nunca converter
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.jar  binary
+*.zip  binary
+*.pdf  binary
+*.docx binary
+*.pptx binary
+*.xlsx binary

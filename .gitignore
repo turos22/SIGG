@@ -1,2 +1,19 @@
 Exemplo.txt
 .env
+
+# --- Específico de cada máquina: se for para o repositório, quebra no SO dos colegas ---
+
+# Config local (JAVA_HOME, senha do banco, portas)
+.env.*
+
+# IDEs: guardam caminhos absolutos e o SDK da máquina de quem abriu
+.idea/
+*.iml
+*.iws
+/.vscode/
+
+# Lixo de sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+*~

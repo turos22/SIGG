@@ -1,0 +1,61 @@
+# CI do SIGG: a cada push na main e a cada pull request, confere se o backend e o front
+# compilam e passam nos testes numa máquina limpa, igual à de um colega que acabou de clonar.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (Java 25 + PostgreSQL)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SIGG_BACKEND
+    # Banco igual ao de desenvolvimento: o teste do projeto sobe o Spring, que precisa conectar
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres123
+          POSTGRES_DB: Escoteiros
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d Escoteiros"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Carregar o dump de desenvolvimento
+        run: psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_v1.sql
+        env:
+          PGPASSWORD: postgres123
+      - name: Compilar e rodar os testes
+        # "sh mvnw" funciona mesmo se o mvnw perder o bit de execução num commit feito no Windows
+        run: sh mvnw -B verify
+
+  frontend:
+    name: Frontend (Node + Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SIGG_FrontEnd
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: SIGG_FrontEnd/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
