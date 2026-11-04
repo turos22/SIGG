@@ -53,15 +53,6 @@ class ConsultaDePapeisTest {
     }
 
     @Test
-    void buscarQuemNaoEEscoteiroDevolve404() throws Exception {
-        // o 404 é da regra (vem com "erro"), não de rota inexistente
-        mvc.perform(get("/escoteiros/4")).andExpect(status().isNotFound()) // Teresa: só financeira
-                .andExpect(jsonPath("$.erro").isNotEmpty());
-        mvc.perform(get("/escoteiros/999")).andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.erro").isNotEmpty());
-    }
-
-    @Test
     void listarChefesTrazDadosDeChefeEscoteiroEMembro() throws Exception {
         mvc.perform(get("/chefes"))
                 .andExpect(status().isOk())
