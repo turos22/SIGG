@@ -1,13 +1,14 @@
 import { Outlet } from 'react-router'
-import Cabecalho from '@/components/template/Cabecalho'
+import MenuLateral from '@/components/template/MenuLateral'
+import './page.css'
 
-// Igual ao layout.tsx do Next: envolve todas as páginas. Cabeçalho, menu e providers
-// (contexts) entram aqui; <Outlet /> é onde a página da rota atual aparece.
 export default function Layout() {
   return (
-    <>
-      <Cabecalho />
-      <Outlet />
-    </>
+    <div className="app-layout">
+      <MenuLateral />
+      <div className="app-conteudo">
+        <Outlet />
+      </div>
+    </div>
   )
 }
