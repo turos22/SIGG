@@ -1,0 +1,90 @@
+# Integração contínua do SIGG.
+# A cada push na main, a cada pull request e a cada disparo manual (aba Actions → Run workflow),
+# confere se o front e o back compilam e passam nos testes numa máquina limpa, igual à de um colega
+# que acabou de clonar. Os dois jobs rodam em paralelo e são independentes.
+name: Integração Contínua
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Um commit novo na mesma branch/PR cancela a execução anterior (parada na fila ou rodando),
+# para não gastar tempo de runner com código que já foi substituído.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# O CI só lê o repositório; não precisa de permissão de escrita.
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend (Node 24 + Vite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: SIGG_FrontEnd
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: SIGG_FrontEnd/package-lock.json
+      - name: Instalar dependências
+        # npm ci instala exatamente o que está no package-lock.json (inclui o MUI) e falha se ele estiver fora de sincronia
+        run: npm ci --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Build (tsc + vite)
+        run: npm run build
+
+  backend:
+    name: Backend (Java 25 + PostgreSQL 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: SIGG_BACKEND
+    # Banco igual ao de desenvolvimento: os testes sobem o Spring, que conecta em
+    # localhost:5432/Escoteiros com o usuário e a senha do application.properties.
+    # É um container descartável: nasce e morre a cada execução.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres123
+          POSTGRES_DB: Escoteiros
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d Escoteiros"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Carregar o dump de desenvolvimento
+        run: psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_v1.sql
+        env:
+          PGPASSWORD: postgres123
+      - name: Compilar e rodar os testes
+        # "sh mvnw" funciona mesmo se o mvnw perder o bit de execução num commit feito no Windows
+        run: sh mvnw -B -ntp verify
+      - name: Guardar relatórios de teste (só se falhar)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: relatorios-de-teste-backend
+          path: SIGG_BACKEND/target/surefire-reports
+          if-no-files-found: ignore
+          retention-days: 7

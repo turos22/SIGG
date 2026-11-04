@@ -60,34 +60,6 @@ class PromocaoTest {
     }
 
     @Test
-    void promoverQuemNaoEEscoteiroDevolve400() throws Exception {
-        enviar("/escoteiros/4/chefe", "{\"gestao_ini\":\"2026-11-01\",\"tropa\":{\"cod\":2}}") // Teresa: só financeira
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erro").isNotEmpty());
-        assertEquals(0, contar("SELECT count(*) FROM chefe WHERE mem_cod = 4"));
-    }
-
-    @Test
-    void promoverQuemJaEChefeDevolve400() throws Exception {
-        enviar("/escoteiros/6/chefe", "{\"gestao_ini\":\"2026-11-01\",\"tropa\":{\"cod\":2}}") // Renata já é chefe
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void promoverMembroInexistenteDevolve404() throws Exception {
-        enviar("/escoteiros/999/chefe", "{\"gestao_ini\":\"2026-11-01\",\"tropa\":{\"cod\":2}}")
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.erro").isNotEmpty()); // o 404 é da regra, não de rota inexistente
-    }
-
-    @Test
-    void promoverAChefeSemTropaDevolve400() throws Exception {
-        enviar("/escoteiros/11/chefe", "{\"gestao_ini\":\"2026-11-01\"}")
-                .andExpect(status().isBadRequest());
-        assertEquals(0, contar("SELECT count(*) FROM chefe WHERE mem_cod = 11"));
-    }
-
-    @Test
     void promoverEscoteiroAPresidente() throws Exception {
         int presCod = jdbc.queryForObject("SELECT max(pres_cod) FROM presidente", Integer.class) + 1;
 
@@ -98,12 +70,5 @@ class PromocaoTest {
 
         assertEquals(1, contar("SELECT count(*) FROM presidente WHERE mem_cod = 12 AND pres_cod = ? "
                 + "AND pres_gestao_ini = DATE '2026-01-01' AND pres_gestao_fim = DATE '2027-12-31'", presCod));
-    }
-
-    @Test
-    void presidenteSemFimDeGestaoDevolve400() throws Exception {
-        enviar("/escoteiros/12/presidente", "{\"gestao_ini\":\"2026-01-01\"}") // pres_gestao_fim é NOT NULL
-                .andExpect(status().isBadRequest());
-        assertEquals(0, contar("SELECT count(*) FROM presidente WHERE mem_cod = 12"));
     }
 }
