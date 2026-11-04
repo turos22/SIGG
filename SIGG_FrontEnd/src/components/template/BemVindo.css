@@ -1,0 +1,52 @@
+/* faixa de boas-vindas: azul → verde, com costura tracejada e círculo bege */
+.bem-vindo {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px 26px;
+  border-radius: 16px;
+  color: #fff;
+  background:
+    linear-gradient(115deg, #0f4c8a 0%, #1478a8 55%, #3fa57f 100%),
+    var(--fibra);
+  outline: 2px dashed rgba(255, 255, 255, 0.28);
+  outline-offset: -9px;
+}
+
+.bem-vindo::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: var(--bege);
+  opacity: 0.22;
+}
+
+.bem-vindo h1 {
+  color: #fff;
+  font-size: 24px;
+  letter-spacing: -0.3px;
+}
+
+.bem-vindo p {
+  margin: 4px 0 0;
+  opacity: 0.92;
+}
+
+.bem-vindo-selo {
+  position: relative;
+  z-index: 1;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--bege);
+  color: #5a4a22;
+  font-size: 12px;
+  font-weight: 700;
+}

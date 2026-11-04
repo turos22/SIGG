@@ -1,0 +1,234 @@
+.menu-lateral {
+  position: sticky;
+  top: 0;
+  flex: none;
+  width: 72px;
+  height: 100vh;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden auto;
+  color: #e6eef8;
+  background-color: var(--azul-escuro);
+  background-image:
+    radial-gradient(120% 60% at 0% 0%, rgba(255, 255, 255, 0.06), transparent 60%),
+    var(--fibra);
+  border-right: 3px solid var(--marrom);
+  transition: width 0.22s ease;
+}
+
+.menu-lateral.expandido {
+  width: 252px;
+}
+
+/* ---------- marca ---------- */
+.menu-marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  margin-bottom: 14px;
+  white-space: nowrap;
+}
+
+.menu-logo {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: -2px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bege) 40%, var(--superficie));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bege) 70%, transparent);
+}
+
+
+.menu-logo img {
+  height: 40px;
+  width: auto;
+  transform: translateY(-2.4%);
+}
+
+.menu-marca strong {
+  font-size: 17px;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.menu-marca small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #9fb6d1;
+}
+
+.menu-lateral.expandido .menu-marca strong {
+  opacity: 1;
+}
+
+/* ---------- itens ---------- */
+.menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  height: 44px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #c9d8ea;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.menu-item svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menu-item svg.menu-seta,
+.menu-recolher svg {
+  width: 14px;
+  height: 14px;
+}
+
+.menu-rotulo {
+  flex: 1;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.menu-seta {
+  opacity: 0;
+  transition: transform 0.2s, opacity 0.15s;
+}
+
+.menu-lateral.expandido .menu-rotulo,
+.menu-lateral.expandido .menu-seta {
+  opacity: 1;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.menu-item.ativo {
+  background: var(--verde-folha);
+  color: var(--azul-escuro);
+  font-weight: 600;
+}
+
+.menu-item.ativo .menu-seta {
+  transform: rotate(90deg);
+}
+
+.menu-item:focus-visible,
+.menu-sub a:focus-visible {
+  outline: 2px solid var(--verde-folha);
+  outline-offset: 2px;
+}
+
+/* tooltip no modo só-ícones */
+.menu-item::after {
+  content: attr(data-rotulo);
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--azul-escuro);
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  box-shadow: var(--shadow);
+}
+
+.menu-lateral:not(.expandido) .menu-item:hover::after {
+  opacity: 1;
+}
+
+/* ---------- submenu inline, abaixo do item ---------- */
+.menu-sub {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.menu-sub.aberto {
+  grid-template-rows: 1fr;
+}
+
+.menu-sub > div {
+  overflow: hidden;
+}
+
+.menu-sub.aberto > div {
+  padding: 4px 0 6px;
+}
+
+.menu-lateral:not(.expandido) .menu-sub {
+  display: none;
+}
+
+.menu-sub a,
+.menu-sub .em-breve {
+  display: block;
+  margin-left: 24px;
+  padding: 8px 12px 8px 22px;
+  border-left: 2px solid rgba(255, 255, 255, 0.14);
+  font-size: 13.5px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.menu-sub a {
+  color: #b9cce3;
+}
+
+.menu-sub a:hover {
+  color: #fff;
+  border-left-color: var(--verde-folha);
+}
+
+.menu-sub a.atual {
+  color: var(--verde-folha);
+  border-left-color: var(--verde-folha);
+  font-weight: 600;
+}
+
+.menu-sub .em-breve {
+  color: #7f95b0;
+  cursor: not-allowed;
+}
+
+/* ---------- rodapé ---------- */
+.menu-espaco {
+  flex: 1;
+}
+
+.menu-recolher {
+  color: #9fb6d1;
+}
+
+.menu-lateral.expandido .menu-recolher svg {
+  transform: rotate(180deg);
+}

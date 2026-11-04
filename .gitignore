@@ -17,3 +17,7 @@ Exemplo.txt
 Thumbs.db
 desktop.ini
 *~
+
+# Trava que o LibreOffice/Word cria enquanto um documento está aberto
+.~lock.*#
+~$*
