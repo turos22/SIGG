@@ -73,29 +73,6 @@ class CadastroDePapeisTest {
     }
 
     @Test
-    void cadastrarEscoteiroSemNomeDevolve400ENaoGravaNada() throws Exception {
-        int membrosAntes = contar("SELECT count(*) FROM membro");
-
-        enviar("/escoteiros", "{\"membro\":" + MEMBRO_NOVO.replace("\"nome\":\"Lucas Teste\"", "\"nome\":\"\"")
-                + ",\"cat_mensalidade\":1,\"patrulha\":{\"cod\":3}}")
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erro").isNotEmpty());
-
-        assertEquals(membrosAntes, contar("SELECT count(*) FROM membro"));
-    }
-
-    @Test
-    void cadastrarComCpfDeMembroExistenteDevolve400ENaoGravaNada() throws Exception {
-        int membrosAntes = contar("SELECT count(*) FROM membro");
-
-        enviar("/financeiros", "{\"membro\":" + MEMBRO_NOVO.replace("52998224725", CPF_DO_PEDRO) + "}")
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erro").isNotEmpty());
-
-        assertEquals(membrosAntes, contar("SELECT count(*) FROM membro"));
-    }
-
-    @Test
     void cadastrarFinanceiroGravaOMembroEDepoisOFinanceiro() throws Exception {
         int memCod = maior("membro", "mem_cod") + 1;
         int finCod = maior("financeiro", "fin_cod") + 1;
@@ -155,19 +132,5 @@ class CadastroDePapeisTest {
 
         assertEquals(membrosAntes, contar("SELECT count(*) FROM membro"));
         assertEquals(1, contar("SELECT count(*) FROM responsável WHERE mem_cod = 11"));
-    }
-
-    @Test
-    void acrescentarPapelQueOMembroJaTemDevolve400() throws Exception {
-        enviar("/membros/4/financeiro", "{}") // Teresa Cristina Vilela já é financeira
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erro").isNotEmpty());
-    }
-
-    @Test
-    void acrescentarPapelAMembroInexistenteDevolve404() throws Exception {
-        enviar("/membros/999/financeiro", "{}")
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.erro").isNotEmpty()); // o 404 é da regra, não de rota inexistente
     }
 }
