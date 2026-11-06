@@ -41,6 +41,37 @@ public class Escoteiro {
         return new EscoteiroDAO().existe(memCod);
     }
 
+    public Escoteiro buscarPorCpf(String cpf) {
+        return new EscoteiroDAO().getPorCpf(cpf);
+    }
+
+    public Escoteiro buscarPorCodigo(int escCod) {
+        return new EscoteiroDAO().getPorCodigo(escCod);
+    }
+
+    public List<Escoteiro> pesquisar(String termo) {
+        return new EscoteiroDAO().pesquisar(termo);
+    }
+
+    public List<Escoteiro> doResponsavel(int memCodResponsavel) {
+        return new EscoteiroDAO().doResponsavel(memCodResponsavel);
+    }
+
+    public List<Escoteiro> adotados() {
+        return new EscoteiroDAO().doAnjo(esc_cod);
+    }
+
+    public boolean ehAdotado() {
+        return anjo > 0 && anjo != esc_cod;
+    }
+
+    public boolean vincularAnjo(int escCodAnjo) {
+        if (!new EscoteiroDAO().vincularAnjo(membro.getMem_cod(), escCodAnjo))
+            return false;
+        anjo = escCodAnjo;
+        return true;
+    }
+
     public Membro getMembro() {
         return membro;
     }

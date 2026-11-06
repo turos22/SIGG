@@ -1,0 +1,22 @@
+.resumo-verificacao {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.resumo-verificacao-pessoa {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.resumo-verificacao-pessoa span {
+  display: block;
+  font-size: 12px;
+}
+
+.resumo-verificacao-pessoa strong {
+  display: block;
+  color: var(--text-h);
+}
