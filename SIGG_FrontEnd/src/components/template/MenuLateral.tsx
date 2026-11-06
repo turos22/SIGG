@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router'
 import logoEscoteiros from '@/assets/logo_escoteiros.png'
+import { useSessao } from '@/data/contexts/SessaoContexto'
+import { AUTENTICACAO_ATIVA } from '@/data/services/sessao'
+import { podeAcessar } from '@/data/utils/permissoes'
 import Icone, { type NomeIcone } from './Icone'
 import './MenuLateral.css'
 
@@ -20,11 +23,17 @@ const GRUPOS: Grupo[] = [
   { id: 'inicio', rotulo: 'Início', icone: 'inicio', sub: [{ rotulo: 'Painel do grupo', to: '/' }, { rotulo: 'Avisos' }, { rotulo: 'Aniversariantes' }] },
   { id: 'membros', rotulo: 'Membros', icone: 'responsaveis', sub: [{ rotulo: 'Listar membros', to: '/membros' }] },
   { id: 'tropa', rotulo: 'Tropa', icone: 'tropa', sub: [{ rotulo: 'Gerenciar tropas', to: '/tropa' }] },
+  { id: 'financeiro', rotulo: 'Financeiro', icone: 'financeiro', sub: [{ rotulo: 'Mensalidades', to: '/mensalidades' }, { rotulo: 'Contribuições (Anjos)', to: '/contribuicoes' }] },
 ]
 
 export default function MenuLateral() {
   const [aberto, setAberto] = useState<string | null>(null)
   const [expandido, setExpandido] = useState(false)
+  const { usuario, sair } = useSessao()
+  const grupos = GRUPOS.map((grupo) => ({
+    ...grupo,
+    sub: grupo.sub.filter((sub) => !sub.to || podeAcessar(usuario?.perfis, sub.to)),
+  })).filter((grupo) => grupo.sub.length > 0)
 
   function alternarGrupo(id: string) {
     const novo = aberto === id ? null : id
@@ -48,7 +57,7 @@ export default function MenuLateral() {
         </strong>
       </div>
 
-      {GRUPOS.map((grupo) => {
+      {grupos.map((grupo) => {
         const ativo = aberto === grupo.id
         return (
           <div key={grupo.id}>
@@ -84,6 +93,12 @@ export default function MenuLateral() {
       })}
 
       <div className="menu-espaco" />
+      {AUTENTICACAO_ATIVA && usuario && (
+        <button type="button" className="menu-item" data-rotulo={`Sair (${usuario.nome})`} aria-label="Sair do sistema" onClick={() => sair()}>
+          <Icone nome="sair" />
+          <span className="menu-rotulo">Sair</span>
+        </button>
+      )}
       <button type="button" className="menu-item menu-recolher" data-rotulo="Expandir menu" aria-label="Expandir ou recolher menu" onClick={alternarMenu}>
         <Icone nome="seta" />
         <span className="menu-rotulo">Recolher menu</span>

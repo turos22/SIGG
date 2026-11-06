@@ -47,6 +47,12 @@ const ICONES = {
   ),
   relatorios: <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />,
   seta: <path d="M9 6l6 6-6 6" />,
+  sair: (
+    <>
+      <path d="M9 4H5v16h4" />
+      <path d="M16 8l4 4-4 4M20 12H9" />
+    </>
+  ),
   ok: <path d="M5 12l5 5 9-10" />,
   alerta: <path d="M12 8v5M12 17h.01" />,
 }

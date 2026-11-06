@@ -1,0 +1,1 @@
+export type Perfil = 'ADMIN' | 'PRESIDENTE' | 'CHEFE' | 'FINANCEIRO' | 'RESPONSAVEL' | 'ESCOTEIRO'

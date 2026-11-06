@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import Box from '@mui/material/Box'
+import CampoCpf from '@/components/formulario/CampoCpf'
 import CampoData from '@/components/formulario/CampoData'
 import CampoInteiro from '@/components/formulario/CampoInteiro'
 import CampoTexto from '@/components/formulario/CampoTexto'
 import Formulario from '@/components/formulario/Formulario'
+import { cpfValido } from '@/data/utils/validadores'
 
 export interface DadosEscoteiro {
   nome: string
@@ -50,6 +52,7 @@ function validar(d: DadosEscoteiro): Erros {
   if (!d.dt_nascto) erros.set("dt_nascto", 'Obrigatório')
   else if (d.dt_nascto > HOJE) erros.set("dt_nascto", 'Data no futuro')
   if (!/^\d{11}$/.test(d.CPF)) erros.set("CPF", 'Deve ter 11 dígitos')
+  else if (!cpfValido(d.CPF)) erros.set("CPF", 'CPF inválido')
   if (!/^\d{8}$/.test(d.CEP)) erros.set("CEP", 'Deve ter 8 dígitos')
   if (!d.endereco_num || d.endereco_num <= 0) erros.set("endereco_num", 'Informe o número')
   if (d.telefone && !/^\d{10,11}$/.test(d.telefone)) erros.set("telefone", 'Deve ter 10 ou 11 dígitos')
@@ -118,7 +121,7 @@ export default function FormsEscoteiros({ inicial, aoConfirmar, aoCancelar, carr
         <CampoData rotulo="Nascimento" valor={dados.dt_nascto} aoMudar={(v) => atualizar('dt_nascto', v)} maximo={HOJE} obrigatorio erro={erros.get('dt_nascto')} />
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 2 }}>
-        <CampoTexto rotulo="CPF" valor={dados.CPF} aoMudar={(v) => atualizar('CPF', v.replace(/\D/g, ''))} tamanhoMaximo={11} ajuda="Só números" obrigatorio erro={erros.get('CPF')} />
+        <CampoCpf rotulo="CPF" valor={dados.CPF} aoMudar={(v) => atualizar('CPF', v)} obrigatorio erro={erros.get('CPF')} />
         <CampoTexto rotulo="RG" valor={dados.RG} aoMudar={(v) => atualizar('RG', v)} tamanhoMaximo={10} obrigatorio erro={erros.get('RG')} />
       </Box>
 

@@ -69,22 +69,26 @@ BEGIN;
 -- ----------------------------------------------------------------------------
 -- RESET (apenas ambiente de desenvolvimento!)
 -- ----------------------------------------------------------------------------
-DROP TABLE IF EXISTS pagamento              CASCADE;
-DROP TABLE IF EXISTS contas_receber         CASCADE;
-DROP TABLE IF EXISTS mensalidade            CASCADE;
-DROP TABLE IF EXISTS frequencia             CASCADE;
-DROP TABLE IF EXISTS escoteiro_responsavel  CASCADE;
-DROP TABLE IF EXISTS chefe                  CASCADE;
-DROP TABLE IF EXISTS presidente             CASCADE;
-DROP TABLE IF EXISTS financeiro             CASCADE;
-DROP TABLE IF EXISTS escoteiro              CASCADE;
-DROP TABLE IF EXISTS responsável            CASCADE;
-DROP TABLE IF EXISTS membro                 CASCADE;
-DROP TABLE IF EXISTS patrulha               CASCADE;
-DROP TABLE IF EXISTS tropa                  CASCADE;
-DROP TABLE IF EXISTS atividade_especial     CASCADE;
-DROP TABLE IF EXISTS categoria_mensalidade  CASCADE;
-DROP TABLE IF EXISTS tipo_pagamento         CASCADE;
+DROP TABLE IF EXISTS pagamento                          CASCADE;
+DROP TABLE IF EXISTS contas_receber                     CASCADE;
+DROP TABLE IF EXISTS mensalidade                        CASCADE;
+DROP TABLE IF EXISTS frequencia                         CASCADE;
+DROP TABLE IF EXISTS escoteiro_responsavel              CASCADE;
+DROP TABLE IF EXISTS chefe                              CASCADE;
+DROP TABLE IF EXISTS presidente                         CASCADE;
+DROP TABLE IF EXISTS financeiro                         CASCADE;
+DROP TABLE IF EXISTS escoteiro                          CASCADE;
+DROP TABLE IF EXISTS responsável                        CASCADE;
+DROP TABLE IF EXISTS membro                             CASCADE;
+DROP TABLE IF EXISTS patrulha                           CASCADE;
+DROP TABLE IF EXISTS tropa                              CASCADE;
+DROP TABLE IF EXISTS atividade_especial                 CASCADE;
+DROP TABLE IF EXISTS categoria_mensalidade              CASCADE;
+DROP TABLE IF EXISTS tipo_pagamento                     CASCADE;
+DROP TABLE IF EXISTS contribuicao                       CASCADE;
+DROP TABLE IF EXISTS conta_token                        CASCADE;
+DROP TABLE IF EXISTS conta                              CASCADE;
+DROP FUNCTION IF EXISTS conta_exige_maior_de_idade()    CASCADE;
 
 -- ----------------------------------------------------------------------------
 -- ESTRUTURA (idêntica ao Script_sql_v1.sql; apenas sem os comentários
@@ -238,6 +242,86 @@ CREATE TABLE tropa (
 );
 ALTER TABLE tropa ADD CONSTRAINT tropa_pk PRIMARY KEY ( tro_cod );
 
+CREATE TABLE contribuicao (
+    con_cod         int4 NOT NULL,
+    con_dt          DATE NOT NULL,
+    con_dt_fim      DATE,
+    anjo_esc_cod    int4 NOT NULL,
+    adotado_esc_cod int4 NOT NULL
+);
+ALTER TABLE contribuicao ADD CONSTRAINT contribuicao_pk PRIMARY KEY ( con_cod );
+ALTER TABLE contribuicao ADD CONSTRAINT contribuicao_anjo_adotado_ck CHECK ( anjo_esc_cod <> adotado_esc_cod );
+
+CREATE UNIQUE INDEX contribuicao_adotado_ativo_ux ON contribuicao ( adotado_esc_cod ) WHERE con_dt_fim IS NULL;
+
+CREATE TABLE conta (
+    cta_cod          int4 NOT NULL,
+    mem_cod          int4 NOT NULL,
+    cta_senha        VARCHAR(100) NOT NULL,
+    cta_situacao     CHAR(1) NOT NULL DEFAULT 'P',
+    cta_admin        BOOLEAN NOT NULL DEFAULT FALSE,
+    cta_tentativas   int4 NOT NULL DEFAULT 0,
+    cta_bloqueio_ate TIMESTAMP,
+    cta_dt_criacao   DATE NOT NULL DEFAULT CURRENT_DATE
+);
+ALTER TABLE conta ADD CONSTRAINT conta_pk PRIMARY KEY ( cta_cod );
+ALTER TABLE conta ADD CONSTRAINT conta_membro_un UNIQUE ( mem_cod );
+ALTER TABLE conta ADD CONSTRAINT conta_situacao_ck CHECK ( cta_situacao IN ('A', 'P', 'I') );
+ALTER TABLE conta
+    ADD CONSTRAINT conta_membro_fk FOREIGN KEY ( mem_cod )
+        REFERENCES membro ( mem_cod );
+
+CREATE TABLE conta_token (
+    tok_cod      int4 NOT NULL,
+    cta_cod      int4 NOT NULL,
+    tok_hash     CHAR(64) NOT NULL,
+    tok_tipo     VARCHAR(12) NOT NULL,
+    tok_expira   TIMESTAMP NOT NULL,
+    tok_usado_em TIMESTAMP
+);
+ALTER TABLE conta_token ADD CONSTRAINT conta_token_pk PRIMARY KEY ( tok_cod );
+ALTER TABLE conta_token ADD CONSTRAINT conta_token_hash_un UNIQUE ( tok_hash );
+ALTER TABLE conta_token ADD CONSTRAINT conta_token_tipo_ck CHECK ( tok_tipo IN ('CONFIRMACAO', 'REDEFINICAO') );
+ALTER TABLE conta_token
+    ADD CONSTRAINT conta_token_conta_fk FOREIGN KEY ( cta_cod )
+        REFERENCES conta ( cta_cod ) ON DELETE CASCADE;
+
+CREATE FUNCTION conta_exige_maior_de_idade() RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT m.mem_dt_nascto FROM membro m WHERE m.mem_cod = NEW.mem_cod) > CURRENT_DATE - INTERVAL '18 years' THEN
+        RAISE EXCEPTION 'Somente maiores de idade podem ter conta no sistema (membro %)', NEW.mem_cod;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER conta_maior_de_idade_tg
+    BEFORE INSERT OR UPDATE OF mem_cod ON conta
+    FOR EACH ROW EXECUTE FUNCTION conta_exige_maior_de_idade();
+
+CREATE TABLE IF NOT EXISTS SPRING_SESSION (
+    PRIMARY_ID CHAR(36) NOT NULL,
+    SESSION_ID CHAR(36) NOT NULL,
+    CREATION_TIME BIGINT NOT NULL,
+    LAST_ACCESS_TIME BIGINT NOT NULL,
+    MAX_INACTIVE_INTERVAL INT NOT NULL,
+    EXPIRY_TIME BIGINT NOT NULL,
+    PRINCIPAL_NAME VARCHAR(100),
+    CONSTRAINT SPRING_SESSION_PK PRIMARY KEY (PRIMARY_ID)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS SPRING_SESSION_IX1 ON SPRING_SESSION (SESSION_ID);
+CREATE INDEX IF NOT EXISTS SPRING_SESSION_IX2 ON SPRING_SESSION (EXPIRY_TIME);
+CREATE INDEX IF NOT EXISTS SPRING_SESSION_IX3 ON SPRING_SESSION (PRINCIPAL_NAME);
+
+CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
+    SESSION_PRIMARY_ID CHAR(36) NOT NULL,
+    ATTRIBUTE_NAME VARCHAR(200) NOT NULL,
+    ATTRIBUTE_BYTES BYTEA NOT NULL,
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID)
+        REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
+);
+
 -- Chaves estrangeiras
 ALTER TABLE chefe
     ADD CONSTRAINT chefe_escoteiro_fk FOREIGN KEY ( mem_cod )
@@ -318,6 +402,14 @@ ALTER TABLE presidente
 ALTER TABLE responsável
     ADD CONSTRAINT responsável_membro_fk FOREIGN KEY ( mem_cod )
         REFERENCES membro ( mem_cod );
+
+ALTER TABLE contribuicao
+    ADD CONSTRAINT contribuicao_anjo_fk FOREIGN KEY ( anjo_esc_cod )
+        REFERENCES escoteiro ( esc_cod );
+
+ALTER TABLE contribuicao
+    ADD CONSTRAINT contribuicao_adotado_fk FOREIGN KEY ( adotado_esc_cod )
+        REFERENCES escoteiro ( esc_cod );
 
 
 -- ----------------------------------------------------------------------
@@ -1466,5 +1558,30 @@ INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagament
     (224, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 224, 0.00),
     (225, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 225, 0.00),
     (226, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 226, 0.00);
+
+INSERT INTO contribuicao (con_cod, con_dt, con_dt_fim, anjo_esc_cod, adotado_esc_cod)
+    SELECT ROW_NUMBER() OVER (ORDER BY e.esc_cod), COALESCE(m.mem_dt_ini, CURRENT_DATE), NULL, e.escoteiro_esc_cod, e.esc_cod
+    FROM escoteiro e
+    JOIN membro m ON m.mem_cod = e.mem_cod
+    WHERE e.escoteiro_esc_cod <> e.esc_cod;
+
+INSERT INTO conta (cta_cod, mem_cod, cta_senha, cta_situacao, cta_admin, cta_dt_criacao)
+SELECT ROW_NUMBER() OVER (ORDER BY m.mem_cod), m.mem_cod, '$2a$10$9rJI4uBTK4ktV.akLO7D9eOeakQ399H6md9coVYj9AsDom/mKNxTK', 'A', FALSE, CURRENT_DATE
+FROM membro m
+WHERE m.mem_dt_fim IS NULL
+  AND m.mem_dt_nascto <= CURRENT_DATE - INTERVAL '18 years'
+  AND (
+        EXISTS (SELECT 1 FROM presidente x WHERE x.mem_cod = m.mem_cod
+                AND x.pres_gestao_ini <= CURRENT_DATE AND x.pres_gestao_fim >= CURRENT_DATE)
+     OR EXISTS (SELECT 1 FROM chefe x WHERE x.mem_cod = m.mem_cod
+                AND (x.chefe_gestao_fim IS NULL OR x.chefe_gestao_fim >= CURRENT_DATE))
+     OR EXISTS (SELECT 1 FROM financeiro x WHERE x.mem_cod = m.mem_cod)
+     OR EXISTS (SELECT 1 FROM "responsável" x WHERE x.mem_cod = m.mem_cod)
+     OR EXISTS (SELECT 1 FROM escoteiro x WHERE x.mem_cod = m.mem_cod)
+  );
+
+UPDATE conta SET cta_admin = TRUE
+WHERE mem_cod IN (SELECT x.mem_cod FROM presidente x
+                  WHERE x.pres_gestao_ini <= CURRENT_DATE AND x.pres_gestao_fim >= CURRENT_DATE);
 
 COMMIT;

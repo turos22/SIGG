@@ -72,6 +72,35 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
         }
     }
 
+    public Escoteiro getPorCpf(String cpf){
+        List<Escoteiro> escoteiros = buscar("AND m.mem_cpf = ?", cpf);
+        return escoteiros.isEmpty() ? null : escoteiros.get(0);
+    }
+
+    public Escoteiro getPorCodigo(int escCod){
+        List<Escoteiro> escoteiros = buscar("AND e.esc_cod = ?", escCod);
+        return escoteiros.isEmpty() ? null : escoteiros.get(0);
+    }
+
+    public List<Escoteiro> pesquisar(String termo){
+        return buscar("AND (m.mem_cpf = ? OR m.mem_nome ILIKE ? OR CAST(e.esc_cod AS TEXT) = ?)",
+                termo, "%" + termo + "%", termo);
+    }
+
+    public List<Escoteiro> doResponsavel(int memCodResponsavel){
+        return buscar("AND e.mem_cod IN (SELECT er.escoteiro_mem_cod FROM escoteiro_responsavel er"
+                + " WHERE er.responsável_mem_cod = ?)", memCodResponsavel);
+    }
+
+    public List<Escoteiro> doAnjo(int escCodAnjo){
+        return buscar("AND e.escoteiro_esc_cod = ? AND e.esc_cod <> e.escoteiro_esc_cod", escCodAnjo);
+    }
+
+    public boolean vincularAnjo(int memCod, int escCodAnjo){
+        return SingletonDB.getConexao().manipular(
+                "UPDATE escoteiro SET escoteiro_esc_cod = ? WHERE mem_cod = ?", escCodAnjo, memCod);
+    }
+
     public void preencher(Escoteiro escoteiro, ResultSet rs) throws SQLException {
         escoteiro.setMembro(new MembroDAO().preencher(rs));
         escoteiro.setEsc_cod(rs.getInt("esc_cod"));
