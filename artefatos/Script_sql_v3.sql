@@ -89,6 +89,10 @@ DROP TABLE IF EXISTS contribuicao                       CASCADE;
 DROP TABLE IF EXISTS conta_token                        CASCADE;
 DROP TABLE IF EXISTS conta                              CASCADE;
 DROP FUNCTION IF EXISTS conta_exige_maior_de_idade()    CASCADE;
+DROP TRIGGER IF EXISTS conta_preserva_administrador_tg ON conta;
+DROP TRIGGER IF EXISTS membro_preserva_administrador_tg ON membro;
+DROP FUNCTION IF EXISTS conta_preserva_administrador();
+DROP FUNCTION IF EXISTS membro_preserva_administrador();
 
 -- ----------------------------------------------------------------------------
 -- ESTRUTURA (idêntica ao Script_sql_v1.sql; apenas sem os comentários
@@ -321,6 +325,53 @@ CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
     CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID)
         REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
 );
+
+CREATE FUNCTION conta_preserva_administrador() RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.cta_admin AND OLD.cta_situacao = 'A'
+       AND (TG_OP = 'DELETE' OR NOT (NEW.cta_admin AND NEW.cta_situacao = 'A')) THEN
+        PERFORM pg_advisory_xact_lock(7301);
+        IF NOT EXISTS (
+            SELECT 1
+            FROM conta c
+            JOIN membro m ON m.mem_cod = c.mem_cod
+            WHERE c.cta_admin AND c.cta_situacao = 'A' AND m.mem_dt_fim IS NULL AND c.cta_cod <> OLD.cta_cod
+        ) THEN
+            RAISE EXCEPTION 'Deve existir ao menos um administrador ativo no sistema';
+        END IF;
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER conta_preserva_administrador_tg
+    BEFORE UPDATE OF cta_admin, cta_situacao OR DELETE ON conta
+    FOR EACH ROW EXECUTE FUNCTION conta_preserva_administrador();
+
+CREATE FUNCTION membro_preserva_administrador() RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.mem_dt_fim IS NULL AND NEW.mem_dt_fim IS NOT NULL
+       AND EXISTS (SELECT 1 FROM conta c WHERE c.mem_cod = OLD.mem_cod AND c.cta_admin AND c.cta_situacao = 'A') THEN
+        PERFORM pg_advisory_xact_lock(7301);
+        IF NOT EXISTS (
+            SELECT 1
+            FROM conta c
+            JOIN membro m ON m.mem_cod = c.mem_cod
+            WHERE c.cta_admin AND c.cta_situacao = 'A' AND m.mem_dt_fim IS NULL AND c.mem_cod <> OLD.mem_cod
+        ) THEN
+            RAISE EXCEPTION 'Deve existir ao menos um administrador ativo no sistema';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER membro_preserva_administrador_tg
+    BEFORE UPDATE OF mem_dt_fim ON membro
+    FOR EACH ROW EXECUTE FUNCTION membro_preserva_administrador();
 
 -- Chaves estrangeiras
 ALTER TABLE chefe
