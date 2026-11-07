@@ -67,6 +67,17 @@ public class ContaDAO implements IDAO<Conta> {
         return primeira(buscar("AND m.mem_cod = ?", memCod));
     }
 
+    public int contarOutrosAdministradoresAtivos(int ctaCod){
+        ResultSet rs = SingletonDB.getConexao().consultar(
+                "SELECT COUNT(*) AS total FROM conta c JOIN membro m ON m.mem_cod = c.mem_cod"
+                        + " WHERE c.cta_admin AND c.cta_situacao = 'A' AND m.mem_dt_fim IS NULL AND c.cta_cod <> ?", ctaCod);
+        try {
+            return rs != null && rs.next() ? rs.getInt("total") : 0;
+        } catch (SQLException sqlex) {
+            return 0;
+        }
+    }
+
     public List<String> perfisDoMembro(int memCod){
         ResultSet rs = SingletonDB.getConexao().consultar(
                 "SELECT 'PRESIDENTE' AS perfil FROM presidente WHERE mem_cod = ?"

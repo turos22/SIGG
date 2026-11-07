@@ -29,3 +29,30 @@ export function erroDeSenha(senha: string): string | undefined {
 export function dataDeNascimentoValida(data: string, hoje: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(data) && data >= '1900-01-01' && data <= hoje
 }
+
+export function gerarSenhaTemporaria(): string {
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+  const numeros = '23456789'
+  const simbolos = '@#$%&*!?'
+  const todos = letras + numeros + simbolos
+  const sortear = (alfabeto: string): string => {
+    const limite = Math.floor(256 / alfabeto.length) * alfabeto.length
+    const buffer = new Uint8Array(1)
+    do {
+      crypto.getRandomValues(buffer)
+    } while (buffer[0] >= limite)
+    return alfabeto[buffer[0] % alfabeto.length]
+  }
+  const caracteres = [sortear(letras), sortear(numeros), sortear(simbolos)]
+  while (caracteres.length < 14) caracteres.push(sortear(todos))
+  for (let i = caracteres.length - 1; i > 0; i--) {
+    const buffer = new Uint8Array(1)
+    const limite = Math.floor(256 / (i + 1)) * (i + 1)
+    do {
+      crypto.getRandomValues(buffer)
+    } while (buffer[0] >= limite)
+    const j = buffer[0] % (i + 1)
+    ;[caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]]
+  }
+  return caracteres.join('')
+}
