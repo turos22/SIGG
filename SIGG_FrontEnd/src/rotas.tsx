@@ -8,6 +8,7 @@ import PaginaMembros from '@/app/membros/page'
 import PaginaTropa from '@/app/tropa/page'
 import PaginaMensalidades from '@/app/mensalidades/page'
 import PaginaContribuicoes from '@/app/contribuicoes/page'
+import PaginaContas from '@/app/contas/page'
 
 export const rotas = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ export const rotas = createBrowserRouter([
       { path: 'membros', element: <RotaProtegida perfis={PERMISSOES['/membros']}><PaginaMembros /></RotaProtegida> },
       { path: 'tropa', element: <RotaProtegida perfis={PERMISSOES['/tropa']}><PaginaTropa /></RotaProtegida> },
       { path: 'mensalidades', element: <PaginaMensalidades /> },
+      { path: 'contas', element: <RotaProtegida perfis={PERMISSOES['/contas']}><PaginaContas /></RotaProtegida> },
       { path: 'contribuicoes', element: <RotaProtegida perfis={PERMISSOES['/contribuicoes']}><PaginaContribuicoes /></RotaProtegida> },
     ],
   },

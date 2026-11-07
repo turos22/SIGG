@@ -24,6 +24,7 @@ const GRUPOS: Grupo[] = [
   { id: 'membros', rotulo: 'Membros', icone: 'responsaveis', sub: [{ rotulo: 'Listar membros', to: '/membros' }] },
   { id: 'tropa', rotulo: 'Tropa', icone: 'tropa', sub: [{ rotulo: 'Gerenciar tropas', to: '/tropa' }] },
   { id: 'financeiro', rotulo: 'Financeiro', icone: 'financeiro', sub: [{ rotulo: 'Mensalidades', to: '/mensalidades' }, { rotulo: 'Contribuições (Anjos)', to: '/contribuicoes' }] },
+  { id: 'administracao', rotulo: 'Administração', icone: 'responsaveis', sub: [{ rotulo: 'Contas de acesso', to: '/contas' }] },
 ]
 
 export default function MenuLateral() {

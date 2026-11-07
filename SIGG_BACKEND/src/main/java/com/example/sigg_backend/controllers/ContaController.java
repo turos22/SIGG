@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.sigg_backend.facade.ContaFacade;
+import com.example.sigg_backend.models.AlteracaoAdmin;
+import com.example.sigg_backend.models.AlteracaoSituacao;
 import com.example.sigg_backend.models.NovaSenhaAdmin;
 
 @RestController
@@ -24,6 +26,16 @@ public class ContaController {
     @GetMapping
     public ResponseEntity<Object> listar(){
         return ResponseEntity.ok(facade.listar());
+    }
+
+    @PutMapping("/{memCod}/situacao")
+    public ResponseEntity<Object> alterarSituacao(@PathVariable int memCod, @RequestBody AlteracaoSituacao alteracao){
+        return ResponseEntity.ok(facade.alterarSituacao(memCod, alteracao));
+    }
+
+    @PutMapping("/{memCod}/admin")
+    public ResponseEntity<Object> alterarAdministrador(@PathVariable int memCod, @RequestBody AlteracaoAdmin alteracao){
+        return ResponseEntity.ok(facade.alterarAdministrador(memCod, alteracao));
     }
 
     @PutMapping("/{memCod}/senha")
