@@ -7,6 +7,7 @@ export const PERMISSOES: Record<string, Perfil[] | undefined> = {
   '/membros': DIRETORIA,
   '/tropa': ['ADMIN', 'PRESIDENTE', 'CHEFE'],
   '/contribuicoes': DIRETORIA,
+  '/contas': ['ADMIN'],
 }
 
 export function podeAcessar(perfis: Perfil[] | undefined, rota: string): boolean {

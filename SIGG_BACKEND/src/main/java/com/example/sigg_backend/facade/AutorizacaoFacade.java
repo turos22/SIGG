@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.example.sigg_backend.models.Conta;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.UsuarioLogado;
 
@@ -17,11 +18,14 @@ public class AutorizacaoFacade {
 
     private static final String MENSAGEM_NEGADO = "Seu perfil não tem permissão para acessar estes dados";
     private static final String MENSAGEM_NAO_AUTENTICADO = "Autenticação necessária";
+    private static final String MENSAGEM_CONTA_INATIVA = "Conta inativa. Procure um administrador do grupo";
 
     private final boolean ativa;
+    private final SessoesAtivas sessoes;
 
-    public AutorizacaoFacade(@Value("${sigg.seguranca.ativa:true}") boolean ativa) {
+    public AutorizacaoFacade(@Value("${sigg.seguranca.ativa:true}") boolean ativa, SessoesAtivas sessoes) {
         this.ativa = ativa;
+        this.sessoes = sessoes;
     }
 
     public boolean segurancaAtiva() {
@@ -39,6 +43,10 @@ public class AutorizacaoFacade {
         UsuarioLogado usuario = usuarioAtual();
         if (usuario == null)
             throw new NaoAutenticadoException(MENSAGEM_NAO_AUTENTICADO);
+        if (ativa && !contaContinuaAtiva(usuario.getMem_cod())) {
+            sessoes.encerrarTodas(usuario.getName());
+            throw new NaoAutenticadoException(MENSAGEM_CONTA_INATIVA);
+        }
         return usuario;
     }
 
@@ -73,6 +81,11 @@ public class AutorizacaoFacade {
         if (usuario.temPerfil(UsuarioLogado.RESPONSAVEL) && memCodResponsavel == usuario.getMem_cod())
             return;
         throw new AcessoNegadoException(MENSAGEM_NEGADO);
+    }
+
+    private boolean contaContinuaAtiva(int memCod) {
+        Conta conta = new Conta().buscarPorMembro(memCod);
+        return conta != null && conta.existe() && conta.estaAtiva();
     }
 
     private Set<Integer> perfisSobResponsabilidade(UsuarioLogado usuario) {

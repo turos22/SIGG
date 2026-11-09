@@ -7,10 +7,12 @@
 -- Data-base : 22/10/2026  (os dados de mensalidade/frequência vão de jan a out/2026)
 -- Encoding  : UTF-8  (há identificadores com acento: "responsável")
 --
--- Como carregar:
+-- Como carregar (em um banco NOVO e vazio):
 --   createdb sigg_dev
---   psql -d sigg_dev -v ON_ERROR_STOP=1 -f dump_dev_sigg.sql
--- O script é re-executável: ele derruba as tabelas antes de recriá-las.
+--   psql -d sigg_dev -v ON_ERROR_STOP=1 -f Script_sql_v1.sql
+-- O script só ACRESCENTA (CREATE/INSERT/ALTER): não apaga tabelas nem dados, então
+-- NÃO é re-executável. Para recomeçar do zero, recrie o banco (dropdb + createdb).
+-- Mudanças novas entram ao final deste mesmo arquivo; não use DROP/TRUNCATE/DELETE aqui.
 --
 -- ATENÇÃO: todos os dados são FICTÍCIOS (nomes, CPFs com dígito verificador
 -- válido, e-mails @example.com, telefones numa faixa fictícia 189999xxxxx).
@@ -65,30 +67,6 @@
 
 SET client_encoding = 'UTF8';
 BEGIN;
-
--- ----------------------------------------------------------------------------
--- RESET (apenas ambiente de desenvolvimento!)
--- ----------------------------------------------------------------------------
-DROP TABLE IF EXISTS pagamento                          CASCADE;
-DROP TABLE IF EXISTS contas_receber                     CASCADE;
-DROP TABLE IF EXISTS mensalidade                        CASCADE;
-DROP TABLE IF EXISTS frequencia                         CASCADE;
-DROP TABLE IF EXISTS escoteiro_responsavel              CASCADE;
-DROP TABLE IF EXISTS chefe                              CASCADE;
-DROP TABLE IF EXISTS presidente                         CASCADE;
-DROP TABLE IF EXISTS financeiro                         CASCADE;
-DROP TABLE IF EXISTS escoteiro                          CASCADE;
-DROP TABLE IF EXISTS responsável                        CASCADE;
-DROP TABLE IF EXISTS membro                             CASCADE;
-DROP TABLE IF EXISTS patrulha                           CASCADE;
-DROP TABLE IF EXISTS tropa                              CASCADE;
-DROP TABLE IF EXISTS atividade_especial                 CASCADE;
-DROP TABLE IF EXISTS categoria_mensalidade              CASCADE;
-DROP TABLE IF EXISTS tipo_pagamento                     CASCADE;
-DROP TABLE IF EXISTS contribuicao                       CASCADE;
-DROP TABLE IF EXISTS conta_token                        CASCADE;
-DROP TABLE IF EXISTS conta                              CASCADE;
-DROP FUNCTION IF EXISTS conta_exige_maior_de_idade()    CASCADE;
 
 -- ----------------------------------------------------------------------------
 -- ESTRUTURA (idêntica ao Script_sql_v1.sql; apenas sem os comentários
@@ -321,6 +299,53 @@ CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
     CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID)
         REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
 );
+
+CREATE FUNCTION conta_preserva_administrador() RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.cta_admin AND OLD.cta_situacao = 'A'
+       AND (TG_OP = 'DELETE' OR NOT (NEW.cta_admin AND NEW.cta_situacao = 'A')) THEN
+        PERFORM pg_advisory_xact_lock(7301);
+        IF NOT EXISTS (
+            SELECT 1
+            FROM conta c
+            JOIN membro m ON m.mem_cod = c.mem_cod
+            WHERE c.cta_admin AND c.cta_situacao = 'A' AND m.mem_dt_fim IS NULL AND c.cta_cod <> OLD.cta_cod
+        ) THEN
+            RAISE EXCEPTION 'Deve existir ao menos um administrador ativo no sistema';
+        END IF;
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER conta_preserva_administrador_tg
+    BEFORE UPDATE OF cta_admin, cta_situacao OR DELETE ON conta
+    FOR EACH ROW EXECUTE FUNCTION conta_preserva_administrador();
+
+CREATE FUNCTION membro_preserva_administrador() RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.mem_dt_fim IS NULL AND NEW.mem_dt_fim IS NOT NULL
+       AND EXISTS (SELECT 1 FROM conta c WHERE c.mem_cod = OLD.mem_cod AND c.cta_admin AND c.cta_situacao = 'A') THEN
+        PERFORM pg_advisory_xact_lock(7301);
+        IF NOT EXISTS (
+            SELECT 1
+            FROM conta c
+            JOIN membro m ON m.mem_cod = c.mem_cod
+            WHERE c.cta_admin AND c.cta_situacao = 'A' AND m.mem_dt_fim IS NULL AND c.mem_cod <> OLD.mem_cod
+        ) THEN
+            RAISE EXCEPTION 'Deve existir ao menos um administrador ativo no sistema';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER membro_preserva_administrador_tg
+    BEFORE UPDATE OF mem_dt_fim ON membro
+    FOR EACH ROW EXECUTE FUNCTION membro_preserva_administrador();
 
 -- Chaves estrangeiras
 ALTER TABLE chefe

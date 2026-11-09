@@ -141,6 +141,10 @@ public class Conta {
         return new ContaDAO().contasExistentes();
     }
 
+    public int contarOutrosAdministradoresAtivos() {
+        return new ContaDAO().contarOutrosAdministradoresAtivos(cta_cod);
+    }
+
     public Membro membro() {
         return membro;
     }
@@ -163,6 +167,14 @@ public class Conta {
 
     public String getNome() {
         return membro == null ? null : membro.getNome();
+    }
+
+    public String getCpf() {
+        return membro == null ? null : membro.getCPF();
+    }
+
+    public String getEmail() {
+        return membro == null ? null : membro.getEmail();
     }
 
     public String getSituacao() {
