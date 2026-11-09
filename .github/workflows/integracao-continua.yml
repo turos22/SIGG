@@ -74,11 +74,8 @@ jobs:
           java-version: '25'
           cache: maven
       - name: Carregar o dump de desenvolvimento
-        run: |
-          psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_v1.sql
-          psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_contribuicao.sql
-          psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_autenticacao.sql
-          psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_admin_minimo.sql
+        # O v1 já tem tudo (schema, contas e dados fictícios) e só acrescenta: o banco do CI nasce vazio a cada execução
+        run: psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_v1.sql
         env:
           PGPASSWORD: postgres123
       - name: Compilar e rodar os testes
