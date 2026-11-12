@@ -82,7 +82,7 @@ public class MensalidadeFacade {
         for (Escoteiro escoteiro : new Escoteiro().listar()) {
             CategoriaMensalidade categoria = categorias.get(escoteiro.getCat_mensalidade());
             if (categoria == null) {
-                categoria = new CategoriaMensalidade().buscar(escoteiro.getCat_mensalidade());
+                categoria = new CategoriaMensalidade().buscarPorId(escoteiro.getCat_mensalidade());
                 if (categoria == null)
                     throw new RegraNegocioException("Categoria de mensalidade " + escoteiro.getCat_mensalidade()
                             + " de " + escoteiro.getMembro().getNome() + " não encontrada");
