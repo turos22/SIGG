@@ -35,7 +35,10 @@ public class CategoriaMensalidade {
     public static CategoriaMensalidade buscarPorId(int id) {
         return new CategoriaMensalidadeDAO().get(id);
     }
-
+    public CategoriaMensalidade buscar(int id) {
+        return buscarPorId(id);
+    }
+    
     public static List<CategoriaMensalidade> listar(String filtro) {
         return new CategoriaMensalidadeDAO().get(filtro);
     }
