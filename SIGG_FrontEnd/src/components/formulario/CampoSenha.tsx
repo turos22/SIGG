@@ -4,6 +4,7 @@ import InputAdornment from '@mui/material/InputAdornment'
 import TextField from '@mui/material/TextField'
 import Visibilidade from '@mui/icons-material/Visibility'
 import VisibilidadeDesligada from '@mui/icons-material/VisibilityOff'
+import IconeErro from './IconeErro'
 import type { CampoBaseProps } from './tipos'
 
 interface CampoSenhaProps extends CampoBaseProps {
@@ -34,6 +35,7 @@ export default function CampoSenha({
         input: {
           endAdornment: (
             <InputAdornment position="end">
+              {erro && <IconeErro />}
               <IconButton
                 edge="end"
                 size="small"

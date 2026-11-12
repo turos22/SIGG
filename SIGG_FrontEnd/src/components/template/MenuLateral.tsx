@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router'
-import logoEscoteiros from '@/assets/logo_escoteiros.png'
+import { useParametrizacao } from '@/data/contexts/ParametrizacaoContexto'
 import { useSessao } from '@/data/contexts/SessaoContexto'
 import { AUTENTICACAO_ATIVA } from '@/data/services/sessao'
 import { podeAcessar } from '@/data/utils/permissoes'
@@ -24,13 +24,14 @@ const GRUPOS: Grupo[] = [
   { id: 'membros', rotulo: 'Membros', icone: 'responsaveis', sub: [{ rotulo: 'Listar membros', to: '/membros' }] },
   { id: 'tropa', rotulo: 'Tropa', icone: 'tropa', sub: [{ rotulo: 'Gerenciar tropas', to: '/tropa' }] },
   { id: 'financeiro', rotulo: 'Financeiro', icone: 'financeiro', sub: [{ rotulo: 'Mensalidades', to: '/mensalidades' }, { rotulo: 'Contribuições (Anjos)', to: '/contribuicoes' }, { rotulo: 'Tipos de Atividade', to: '/tipos-atividade' }, { rotulo: 'Categorias de Mensalidade', to: '/categorias-mensalidade' }, { rotulo: 'Pagamento de Mensalidades', to: '/pagamentos-mensalidade' }, { rotulo: 'Pagamento de Atividades', to: '/pagamentos-atividade' }, ], },
-  { id: 'administracao', rotulo: 'Administração', icone: 'responsaveis', sub: [{ rotulo: 'Contas de acesso', to: '/contas' }] },
+  { id: 'administracao', rotulo: 'Administração', icone: 'responsaveis', sub: [{ rotulo: 'Contas de acesso', to: '/contas' }, { rotulo: 'Parametrização do sistema', to: '/parametrizacao' }] },
 ]
 
 export default function MenuLateral() {
   const [aberto, setAberto] = useState<string | null>(null)
   const [expandido, setExpandido] = useState(false)
   const { usuario, sair } = useSessao()
+  const { parametrizacao, logo } = useParametrizacao()
   const grupos = GRUPOS.map((grupo) => ({
     ...grupo,
     sub: grupo.sub.filter((sub) => !sub.to || podeAcessar(usuario?.perfis, sub.to)),
@@ -51,10 +52,11 @@ export default function MenuLateral() {
     <aside className={expandido ? 'menu-lateral expandido' : 'menu-lateral'} aria-label="Menu principal">
       <div className="menu-marca">
         <div className="menu-logo">
-          <img src={logoEscoteiros} alt="Escoteiros do Brasil" />
+          <img src={logo} alt={`Logo ${parametrizacao.nomeGrupo}`} />
         </div>
         <strong>
-          SIGG<small>Sempre Alerta</small>
+          {parametrizacao.sigla}
+          {parametrizacao.slogan && <small>{parametrizacao.slogan}</small>}
         </strong>
       </div>
 

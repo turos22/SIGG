@@ -12,6 +12,7 @@ export const PERMISSOES: Record<string, Perfil[] | undefined> = {
   '/pagamentos-mensalidade': ['ADMIN', 'FINANCEIRO'],
   '/pagamentos-atividade': ['ADMIN', 'FINANCEIRO'],
   '/contas': ['ADMIN'],
+  '/parametrizacao': ['ADMIN'],
 }
 
 export function podeAcessar(perfis: Perfil[] | undefined, rota: string): boolean {

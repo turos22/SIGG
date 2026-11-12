@@ -33,6 +33,7 @@ import {
     pesquisarEscoteirosAtividade,
     registrarPagamentoAtividade,
 } from '@/data/services/pagamentosAtividade'
+import { useParametrizacao } from '@/data/contexts/ParametrizacaoContexto'
 import { formatarData } from '@/data/utils/datas'
 import { mensagemDeErro } from '@/data/utils/erros'
 import { formatarCpf, formatarMoeda } from '@/data/utils/formatadores'
@@ -69,6 +70,7 @@ const colunasEscoteiros: ColunaGrade<Escoteiro>[] = [
 ]
 
 export default function PaginaPagamentosAtividade() {
+    const { parametrizacao } = useParametrizacao()
     const navegar = useNavigate()
     const [busca, setBusca] = useState('')
     const [encontrados, setEncontrados] = useState<Escoteiro[]>([])
@@ -479,7 +481,7 @@ export default function PaginaPagamentosAtividade() {
                     {recibo && (
                         <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 1, bgcolor: '#fafafa' }}>
                             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                Grupo de Escoteiros Guayporé 186°/SP — Recibo de Atividade
+                                {parametrizacao.nomeGrupo} — Recibo de Atividade
                             </Typography>
                             <Typography variant="body2"><strong>Escoteiro:</strong> {recibo.escoteiro} (Matrícula {recibo.matricula})</Typography>
                             <Typography variant="body2"><strong>CPF:</strong> {formatarCpf(recibo.cpf)}</Typography>
