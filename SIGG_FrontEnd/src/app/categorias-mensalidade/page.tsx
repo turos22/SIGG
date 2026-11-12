@@ -71,8 +71,26 @@ export default function PaginaCategoriasMensalidade() {
         }
     }
 
+    // Carga inicial. Não chama carregar() aqui: ele faz setCarregando(true) de forma síncrona dentro do efeito
+    // (o estado já nasce true). O estado só é atualizado quando a resposta chega.
     useEffect(() => {
-        carregar('')
+        let ativo = true // evita atualizar o estado depois que a página foi fechada
+        buscarCategoriasMensalidade('')
+            .then((lista) => {
+                if (ativo) {
+                    setCategorias(lista)
+                    setErro('')
+                }
+            })
+            .catch((err: unknown) => {
+                if (ativo) setErro(extrairMensagemErro(err, 'Não foi possível carregar as categorias de mensalidade.'))
+            })
+            .finally(() => {
+                if (ativo) setCarregando(false)
+            })
+        return () => {
+            ativo = false
+        }
     }, [])
 
     const abrirNova = () => {
@@ -195,7 +213,7 @@ export default function PaginaCategoriasMensalidade() {
                             <TextField
                                 label="Valor (R$)"
                                 type="number"
-                                inputProps={{ step: '0.01', min: '0' }}
+                                slotProps={{ htmlInput: { step: '0.01', min: '0' } }}
                                 value={valor}
                                 onChange={(e) => setValor(e.target.value)}
                                 required
@@ -204,7 +222,7 @@ export default function PaginaCategoriasMensalidade() {
                             <TextField
                                 label="Quantidade de Irmãos"
                                 type="number"
-                                inputProps={{ step: '1', min: '0' }}
+                                slotProps={{ htmlInput: { step: '1', min: '0' } }}
                                 value={qtdIrmao}
                                 onChange={(e) => setQtdIrmao(e.target.value)}
                                 required

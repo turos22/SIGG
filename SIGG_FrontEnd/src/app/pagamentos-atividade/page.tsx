@@ -408,7 +408,7 @@ export default function PaginaPagamentosAtividade() {
                             <TextField
                                 label="Valor Recebido (R$)"
                                 type="number"
-                                inputProps={{ step: '0.01', min: '0.01' }}
+                                slotProps={{ htmlInput: { step: '0.01', min: '0.01' } }}
                                 value={valorRecebido}
                                 onChange={(e) => {
                                     setValorRecebido(e.target.value)
@@ -442,7 +442,7 @@ export default function PaginaPagamentosAtividade() {
                             <TextField
                                 label="Data do Pagamento"
                                 type="date"
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                                 value={dataPagamento}
                                 onChange={(e) => setDataPagamento(e.target.value)}
                                 required
@@ -478,7 +478,7 @@ export default function PaginaPagamentosAtividade() {
                 <DialogContent>
                     {recibo && (
                         <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 1, bgcolor: '#fafafa' }}>
-                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                                 Grupo de Escoteiros Guayporé 186°/SP — Recibo de Atividade
                             </Typography>
                             <Typography variant="body2"><strong>Escoteiro:</strong> {recibo.escoteiro} (Matrícula {recibo.matricula})</Typography>
