@@ -8,6 +8,7 @@ export default function Cabecalho() {
       <nav>
         <NavLink to="/" end>Início</NavLink>
         <NavLink to="/escoteiros">Escoteiros</NavLink>
+          <NavLink to="/tipos-atividade">Tipos de Atividade</NavLink>
       </nav>
     </header>
   )

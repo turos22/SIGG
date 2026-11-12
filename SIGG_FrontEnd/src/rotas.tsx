@@ -9,6 +9,10 @@ import PaginaTropa from '@/app/tropa/page'
 import PaginaMensalidades from '@/app/mensalidades/page'
 import PaginaContribuicoes from '@/app/contribuicoes/page'
 import PaginaContas from '@/app/contas/page'
+import PaginaTiposAtividade from '@/app/tipos-atividade/page'
+import PaginaCategoriasMensalidade from '@/app/categorias-mensalidade/page'
+import PaginaPagamentosMensalidade from '@/app/pagamentos-mensalidade/page'
+import PaginaPagamentosAtividade from '@/app/pagamentos-atividade/page'
 
 export const rotas = createBrowserRouter([
   {
@@ -25,6 +29,10 @@ export const rotas = createBrowserRouter([
       { path: 'mensalidades', element: <PaginaMensalidades /> },
       { path: 'contas', element: <RotaProtegida perfis={PERMISSOES['/contas']}><PaginaContas /></RotaProtegida> },
       { path: 'contribuicoes', element: <RotaProtegida perfis={PERMISSOES['/contribuicoes']}><PaginaContribuicoes /></RotaProtegida> },
+      { path: 'tipos-atividade', element: <RotaProtegida perfis={PERMISSOES['/tipos-atividade']}><PaginaTiposAtividade /></RotaProtegida> },
+      { path: 'categorias-mensalidade', element: <RotaProtegida perfis={PERMISSOES['/categorias-mensalidade']}><PaginaCategoriasMensalidade /></RotaProtegida> },
+      { path: 'pagamentos-mensalidade', element: <RotaProtegida perfis={PERMISSOES['/pagamentos-mensalidade']}><PaginaPagamentosMensalidade /></RotaProtegida> },
+      { path: 'pagamentos-atividade', element: <RotaProtegida perfis={PERMISSOES['/pagamentos-atividade']}><PaginaPagamentosAtividade /></RotaProtegida> },
     ],
   },
   { path: '/login', element: <PaginaLogin /> },

@@ -7,6 +7,10 @@ export const PERMISSOES: Record<string, Perfil[] | undefined> = {
   '/membros': DIRETORIA,
   '/tropa': ['ADMIN', 'PRESIDENTE', 'CHEFE'],
   '/contribuicoes': DIRETORIA,
+  '/tipos-atividade': DIRETORIA,
+  '/categorias-mensalidade': DIRETORIA,
+  '/pagamentos-mensalidade': ['ADMIN', 'FINANCEIRO'],
+  '/pagamentos-atividade': ['ADMIN', 'FINANCEIRO'],
   '/contas': ['ADMIN'],
 }
 
