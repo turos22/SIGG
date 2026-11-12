@@ -11,6 +11,7 @@ export const PERMISSOES: Record<string, Perfil[] | undefined> = {
   '/categorias-mensalidade': DIRETORIA,
   '/pagamentos-mensalidade': ['ADMIN', 'FINANCEIRO'],
   '/pagamentos-atividade': ['ADMIN', 'FINANCEIRO'],
+  '/atividades-pagas': ['ADMIN', 'PRESIDENTE'],
   '/contas': ['ADMIN'],
   '/parametrizacao': ['ADMIN'],
 }

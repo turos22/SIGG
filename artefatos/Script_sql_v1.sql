@@ -1643,3 +1643,21 @@ INSERT INTO parametrizacao (par_cod, par_sigla, par_nome_sistema, par_slogan, pa
      '1839162262', 'contato@grupoescoteiroguaypore.com.br', NULL);
 
 COMMIT;
+
+-- ============================================================================
+-- INCREMENTO 2026-11 (Felipe Lima Santos): RF_F5 Ofertar Novas Atividades Pagas
+-- Para quem já tem o banco carregado, rode só este bloco:
+--   psql -d Escoteiros -v ON_ERROR_STOP=1 -f <arquivo com o trecho abaixo>
+-- ============================================================================
+BEGIN;
+
+-- RF_F5 Ofertar Novas Atividades Pagas: campos que o caso de uso pede e o modelo não tinha.
+-- Atividade paga = atv_valor preenchido. As já cadastradas ficam com local/vagas/prazo NULL.
+ALTER TABLE atividade_especial ADD COLUMN atv_local VARCHAR(100);
+ALTER TABLE atividade_especial ADD COLUMN atv_vagas int4;
+ALTER TABLE atividade_especial ADD COLUMN atv_prazo_interesse DATE;
+ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_vagas_ck CHECK ( atv_vagas IS NULL OR atv_vagas > 0 );
+ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_prazo_ck
+    CHECK ( atv_prazo_interesse IS NULL OR atv_prazo_interesse <= atv_data );
+
+COMMIT;
