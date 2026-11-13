@@ -1,7 +1,7 @@
-import type { DadosEscoteiro } from '@/components/escoteiros/FormsEscoteiros'
+import type { DadosPessoa } from '@/data/models/DadosPessoa'
 import type Membro from '@/data/models/Membro'
 
-export function membroParaDados(membro: Membro): Partial<DadosEscoteiro> {
+export function membroParaDados(membro: Membro): DadosPessoa {
   return {
     nome: membro.nome,
     dt_nascto: membro.dt_nascto,

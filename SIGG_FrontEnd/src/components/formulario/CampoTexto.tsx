@@ -9,11 +9,12 @@ interface CampoTextoProps extends CampoBaseProps {
   tipo?: 'text' | 'email' | 'tel' | 'password'
   placeholder?: string
   autoFocus?: boolean // foca o campo ao abrir (use no primeiro campo do modal)
+  filtro?: (valor: string) => string // tira o que o campo não aceita, digitado ou colado (ver data/utils/filtros)
 }
 
 // Campo de uma linha (Edit)
 export default function CampoTexto({
-  rotulo, valor, aoMudar, tamanhoMaximo, tipo = 'text', placeholder, autoFocus, obrigatorio, desabilitado, erro, ajuda,
+  rotulo, valor, aoMudar, tamanhoMaximo, tipo = 'text', placeholder, autoFocus, filtro, obrigatorio, desabilitado, erro, ajuda,
 }: CampoTextoProps) {
   return (
     <TextField
@@ -28,8 +29,12 @@ export default function CampoTexto({
       disabled={desabilitado}
       error={!!erro}
       helperText={erro ?? ajuda}
-      onChange={(evento) => aoMudar(evento.target.value)}
-      slotProps={{ htmlInput: { maxLength: tamanhoMaximo }, input: { endAdornment: adornoDeErro(erro) } }}
+      onChange={(evento) => {
+        const texto = filtro ? filtro(evento.target.value) : evento.target.value
+        aoMudar(tamanhoMaximo !== undefined ? texto.slice(0, tamanhoMaximo) : texto)
+      }}
+      // com filtro, o limite é aplicado depois dele: o maxLength do navegador cortaria o texto colado antes
+      slotProps={{ htmlInput: { maxLength: filtro ? undefined : tamanhoMaximo }, input: { endAdornment: adornoDeErro(erro) } }}
     />
   )
 }

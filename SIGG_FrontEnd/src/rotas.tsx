@@ -6,6 +6,7 @@ import { PERMISSOES } from '@/data/utils/permissoes'
 import PaginaInicial from '@/app/page'
 import PaginaMembros from '@/app/membros/page'
 import PaginaTropa from '@/app/tropa/page'
+import PaginaVoluntarios from '@/app/voluntarios/page'
 import PaginaMensalidades from '@/app/mensalidades/page'
 import PaginaContribuicoes from '@/app/contribuicoes/page'
 import PaginaContas from '@/app/contas/page'
@@ -27,6 +28,7 @@ export const rotas = createBrowserRouter([
     children: [
       { index: true, element: <PaginaInicial /> },
       { path: 'membros', element: <RotaProtegida perfis={PERMISSOES['/membros']}><PaginaMembros /></RotaProtegida> },
+      { path: 'voluntarios', element: <RotaProtegida perfis={PERMISSOES['/voluntarios']}><PaginaVoluntarios /></RotaProtegida> },
       { path: 'tropa', element: <RotaProtegida perfis={PERMISSOES['/tropa']}><PaginaTropa /></RotaProtegida> },
       { path: 'mensalidades', element: <PaginaMensalidades /> },
       { path: 'contas', element: <RotaProtegida perfis={PERMISSOES['/contas']}><PaginaContas /></RotaProtegida> },
