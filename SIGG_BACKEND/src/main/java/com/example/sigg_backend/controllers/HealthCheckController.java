@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -13,12 +12,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.sigg_backend.db.util.Conexao;
-import com.example.sigg_backend.db.util.SingletonDB;
-
 
 @CrossOrigin(origins = "http://127.0.0.1:5500")
 @RestController
 public class HealthCheckController {
+
+    private final Conexao conexao;
+    public HealthCheckController(Conexao conexao) {
+        this.conexao = conexao;
+    }
 
     @GetMapping("health")
     public ResponseEntity<Object> getHeathAPI(){
@@ -27,7 +29,6 @@ public class HealthCheckController {
 
     @GetMapping("health/db")
     public ResponseEntity<Object> getHealthBanco(){
-        Conexao conexao = SingletonDB.getConexao();
         if (conexao.getEstadoConexao())
             return ResponseEntity.ok(Map.of("banco", "UP"));
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)

@@ -9,6 +9,7 @@ import java.util.List;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.example.sigg_backend.db.dao.ContaDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Conta {
     public static final String ATIVA = "A";
@@ -104,11 +105,11 @@ public class Conta {
                 && !membro.getDt_nascto().plusYears(IDADE_MINIMA).isAfter(hoje);
     }
 
-    public void calcularPerfis() {
+    public void calcularPerfis(Conexao conexao) {
         perfis = new ArrayList<>();
         if (admin)
             perfis.add(UsuarioLogado.ADMIN);
-        for (String perfil : new ContaDAO().perfisDoMembro(membro.getMem_cod()))
+        for (String perfil : new ContaDAO().perfisDoMembro(conexao, membro.getMem_cod()))
             if (!perfis.contains(perfil))
                 perfis.add(perfil);
     }
@@ -117,32 +118,32 @@ public class Conta {
         return new UsuarioLogado(membro.getMem_cod(), membro.getNome(), perfis);
     }
 
-    public boolean gravar() {
-        return new ContaDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new ContaDAO().gravar(conexao, this);
     }
 
-    public boolean alterar() {
-        return new ContaDAO().alterar(this);
+    public boolean alterar(Conexao conexao) {
+        return new ContaDAO().alterar(conexao, this);
     }
 
-    public Conta buscarPorCpf(String cpf) {
-        return new ContaDAO().doCpf(cpf);
+    public Conta buscarPorCpf(Conexao conexao, String cpf) {
+        return new ContaDAO().doCpf(conexao, cpf);
     }
 
-    public Conta buscarPorMembro(int memCod) {
-        return new ContaDAO().doMembro(memCod);
+    public Conta buscarPorMembro(Conexao conexao, int memCod) {
+        return new ContaDAO().doMembro(conexao, memCod);
     }
 
-    public Conta buscarPorCodigo(int ctaCod) {
-        return new ContaDAO().get(ctaCod);
+    public Conta buscarPorCodigo(Conexao conexao, int ctaCod) {
+        return new ContaDAO().get(conexao, ctaCod);
     }
 
-    public List<Conta> listar() {
-        return new ContaDAO().contasExistentes();
+    public List<Conta> listar(Conexao conexao) {
+        return new ContaDAO().contasExistentes(conexao);
     }
 
-    public int contarOutrosAdministradoresAtivos() {
-        return new ContaDAO().contarOutrosAdministradoresAtivos(cta_cod);
+    public int contarOutrosAdministradoresAtivos(Conexao conexao) {
+        return new ContaDAO().contarOutrosAdministradoresAtivos(conexao, cta_cod);
     }
 
     public Membro membro() {

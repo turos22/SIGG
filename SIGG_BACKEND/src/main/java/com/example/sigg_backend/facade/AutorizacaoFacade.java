@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.example.sigg_backend.models.Conta;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.UsuarioLogado;
+import com.example.sigg_backend.db.util.Conexao;
 
 @Service
 public class AutorizacaoFacade {
@@ -39,43 +40,43 @@ public class AutorizacaoFacade {
         return null;
     }
 
-    public UsuarioLogado exigirAutenticado() {
+    public UsuarioLogado exigirAutenticado(Conexao conexao) {
         UsuarioLogado usuario = usuarioAtual();
         if (usuario == null)
             throw new NaoAutenticadoException(MENSAGEM_NAO_AUTENTICADO);
-        if (ativa && !contaContinuaAtiva(usuario.getMem_cod())) {
+        if (ativa && !contaContinuaAtiva(conexao, usuario.getMem_cod())) {
             sessoes.encerrarTodas(usuario.getName());
             throw new NaoAutenticadoException(MENSAGEM_CONTA_INATIVA);
         }
         return usuario;
     }
 
-    public void exigirPerfil(List<String> perfisPermitidos) {
+    public void exigirPerfil(Conexao conexao, List<String> perfisPermitidos) {
         if (!ativa)
             return;
-        if (!exigirAutenticado().temAlgumPerfil(perfisPermitidos))
+        if (!exigirAutenticado(conexao).temAlgumPerfil(perfisPermitidos))
             throw new AcessoNegadoException(MENSAGEM_NEGADO);
     }
 
-    public void exigirDiretoria() {
-        exigirPerfil(UsuarioLogado.DIRETORIA);
+    public void exigirDiretoria(Conexao conexao) {
+        exigirPerfil(conexao, UsuarioLogado.DIRETORIA);
     }
 
-    public void exigirAcessoAoEscoteiro(int memCodEscoteiro) {
+    public void exigirAcessoAoEscoteiro(Conexao conexao, int memCodEscoteiro) {
         if (!ativa)
             return;
-        UsuarioLogado usuario = exigirAutenticado();
+        UsuarioLogado usuario = exigirAutenticado(conexao);
         if (usuario.ehDiretoria() || memCodEscoteiro == usuario.getMem_cod())
             return;
-        if (usuario.temPerfil(UsuarioLogado.RESPONSAVEL) && perfisSobResponsabilidade(usuario).contains(memCodEscoteiro))
+        if (usuario.temPerfil(UsuarioLogado.RESPONSAVEL) && perfisSobResponsabilidade(conexao, usuario).contains(memCodEscoteiro))
             return;
         throw new AcessoNegadoException(MENSAGEM_NEGADO);
     }
 
-    public void exigirAcessoAoResponsavel(int memCodResponsavel) {
+    public void exigirAcessoAoResponsavel(Conexao conexao, int memCodResponsavel) {
         if (!ativa)
             return;
-        UsuarioLogado usuario = exigirAutenticado();
+        UsuarioLogado usuario = exigirAutenticado(conexao);
         if (usuario.ehDiretoria())
             return;
         if (usuario.temPerfil(UsuarioLogado.RESPONSAVEL) && memCodResponsavel == usuario.getMem_cod())
@@ -83,18 +84,18 @@ public class AutorizacaoFacade {
         throw new AcessoNegadoException(MENSAGEM_NEGADO);
     }
 
-    private boolean contaContinuaAtiva(int memCod) {
-        Conta conta = new Conta().buscarPorMembro(memCod);
+    private boolean contaContinuaAtiva(Conexao conexao, int memCod) {
+        Conta conta = new Conta().buscarPorMembro(conexao, memCod);
         return conta != null && conta.existe() && conta.estaAtiva();
     }
 
-    private Set<Integer> perfisSobResponsabilidade(UsuarioLogado usuario) {
+    private Set<Integer> perfisSobResponsabilidade(Conexao conexao, UsuarioLogado usuario) {
         Set<Integer> permitidos = new HashSet<>();
-        for (Escoteiro dependente : new Escoteiro().doResponsavel(usuario.getMem_cod()))
+        for (Escoteiro dependente : new Escoteiro().doResponsavel(conexao, usuario.getMem_cod()))
             permitidos.add(dependente.getMembro().getMem_cod());
-        Escoteiro proprio = new Escoteiro().buscar(usuario.getMem_cod());
+        Escoteiro proprio = new Escoteiro().buscar(conexao, usuario.getMem_cod());
         if (proprio != null)
-            for (Escoteiro adotado : proprio.adotados())
+            for (Escoteiro adotado : proprio.adotados(conexao))
                 permitidos.add(adotado.getMembro().getMem_cod());
         return permitidos;
     }

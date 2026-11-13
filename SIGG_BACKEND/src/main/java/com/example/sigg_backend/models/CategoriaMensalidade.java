@@ -3,6 +3,7 @@ package com.example.sigg_backend.models;
 import com.example.sigg_backend.db.dao.CategoriaMensalidadeDAO;
 import java.math.BigDecimal;
 import java.util.List;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class CategoriaMensalidade {
     private Integer cat_mens_cod;
@@ -20,31 +21,31 @@ public class CategoriaMensalidade {
         this.qtd_irmao = qtd_irmao;
     }
 
-    public boolean gravar() {
-        return new CategoriaMensalidadeDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new CategoriaMensalidadeDAO().gravar(conexao, this);
     }
 
-    public boolean alterar() {
-        return new CategoriaMensalidadeDAO().alterar(this);
+    public boolean alterar(Conexao conexao) {
+        return new CategoriaMensalidadeDAO().alterar(conexao, this);
     }
 
-    public boolean apagar() {
-        return new CategoriaMensalidadeDAO().apagar(this);
+    public boolean apagar(Conexao conexao) {
+        return new CategoriaMensalidadeDAO().apagar(conexao, this);
     }
 
-    public static CategoriaMensalidade buscarPorId(int id) {
-        return new CategoriaMensalidadeDAO().get(id);
+    public static CategoriaMensalidade buscarPorId(Conexao conexao, int id) {
+        return new CategoriaMensalidadeDAO().get(conexao, id);
     }
-    public CategoriaMensalidade buscar(int id) {
-        return buscarPorId(id);
+    public CategoriaMensalidade buscar(Conexao conexao, int id) {
+        return buscarPorId(conexao, id);
     }
     
-    public static List<CategoriaMensalidade> listar(String filtro) {
-        return new CategoriaMensalidadeDAO().get(filtro);
+    public static List<CategoriaMensalidade> listar(Conexao conexao, String filtro) {
+        return new CategoriaMensalidadeDAO().get(conexao, filtro);
     }
 
-    public static boolean descricaoJaExiste(String descricao, int excetoCod) {
-        return new CategoriaMensalidadeDAO().existeDescricao(descricao, excetoCod);
+    public static boolean descricaoJaExiste(Conexao conexao, String descricao, int excetoCod) {
+        return new CategoriaMensalidadeDAO().existeDescricao(conexao, descricao, excetoCod);
     }
 
     public Integer getCat_mens_cod() {

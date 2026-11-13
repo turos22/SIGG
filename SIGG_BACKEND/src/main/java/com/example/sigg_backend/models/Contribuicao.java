@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.ContribuicaoDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Contribuicao {
     private int con_cod;
@@ -25,16 +26,16 @@ public class Contribuicao {
         return null;
     }
 
-    public boolean gravar() {
-        return new ContribuicaoDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new ContribuicaoDAO().gravar(conexao, this);
     }
 
-    public List<Contribuicao> listar() {
-        return new ContribuicaoDAO().get();
+    public List<Contribuicao> listar(Conexao conexao) {
+        return new ContribuicaoDAO().get(conexao);
     }
 
-    public List<Contribuicao> doAnjo(int escCodAnjo) {
-        return new ContribuicaoDAO().doAnjo(escCodAnjo);
+    public List<Contribuicao> doAnjo(Conexao conexao, int escCodAnjo) {
+        return new ContribuicaoDAO().doAnjo(conexao, escCodAnjo);
     }
 
     public int getCon_cod() {

@@ -1,71 +1,58 @@
 package com.example.sigg_backend.models;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import com.example.sigg_backend.db.dao.TipoAtividadeDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
+// Tipo de atividade (tabela tipo_atividade: ta_cod, ta_desc). O valor cobrado fica em atividade_especial.
 public class TipoAtividade {
-    private Integer atv_cod;
-    private String atv_nome;
-    private BigDecimal atv_valor;
+    private int ta_cod;
+    private String ta_desc;
 
+    // Só o construtor vazio + setters: assim o JSON do cliente pode omitir ta_cod (o DAO gera o código)
     public TipoAtividade() {
     }
 
-    public TipoAtividade(int atv_cod, String atv_nome, BigDecimal atv_valor) {
-        this.atv_cod = atv_cod;
-        this.atv_nome = atv_nome;
-        this.atv_valor = atv_valor;
-    }
-
     // Métodos de negócio / persistência (Model chama o DAO)
-    public boolean gravar() {
-        return new TipoAtividadeDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new TipoAtividadeDAO().gravar(conexao, this);
     }
 
-    public boolean alterar() {
-        return new TipoAtividadeDAO().alterar(this);
+    public boolean alterar(Conexao conexao) {
+        return new TipoAtividadeDAO().alterar(conexao, this);
     }
 
-    public boolean apagar() {
-        return new TipoAtividadeDAO().apagar(this);
+    public boolean apagar(Conexao conexao) {
+        return new TipoAtividadeDAO().apagar(conexao, this);
     }
 
-    public static TipoAtividade buscarPorId(int id) {
-        return new TipoAtividadeDAO().get(id);
+    public static TipoAtividade buscarPorId(Conexao conexao, int id) {
+        return new TipoAtividadeDAO().get(conexao, id);
     }
 
-    public static List<TipoAtividade> listar(String filtro) {
-        return new TipoAtividadeDAO().get(filtro);
+    public static List<TipoAtividade> listar(Conexao conexao, String filtro) {
+        return new TipoAtividadeDAO().get(conexao, filtro);
     }
 
-    public static boolean existeNome(String nome, int excetoCod) {
-        return new TipoAtividadeDAO().existeNome(nome, excetoCod);
+    public static boolean existeNome(Conexao conexao, String nome, int excetoCod) {
+        return new TipoAtividadeDAO().existeNome(conexao, nome, excetoCod);
     }
 
     // Getters e Setters
-    public int getAtv_cod() {
-        return atv_cod;
+    public int getTa_cod() {
+        return ta_cod;
     }
 
-    public void setAtv_cod(int atv_cod) {
-        this.atv_cod = atv_cod;
+    public void setTa_cod(int ta_cod) {
+        this.ta_cod = ta_cod;
     }
 
-    public String getAtv_nome() {
-        return atv_nome;
+    public String getTa_desc() {
+        return ta_desc;
     }
 
-    public void setAtv_nome(String atv_nome) {
-        this.atv_nome = atv_nome;
-    }
-
-    public BigDecimal getAtv_valor() {
-        return atv_valor;
-    }
-
-    public void setAtv_valor(BigDecimal atv_valor) {
-        this.atv_valor = atv_valor;
+    public void setTa_desc(String ta_desc) {
+        this.ta_desc = ta_desc;
     }
 }

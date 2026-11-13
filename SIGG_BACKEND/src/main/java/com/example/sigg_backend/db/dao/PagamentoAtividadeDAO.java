@@ -2,7 +2,6 @@ package com.example.sigg_backend.db.dao;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.PagamentoAtividade;
 
 import java.math.BigDecimal;
@@ -17,17 +16,16 @@ public class PagamentoAtividadeDAO {
 
     private static final int ATIVIDADE_MENSALIDADE = 1;
 
-    public PagamentoAtividade[] listarPorEscoteiro(int escCod) {
-        return buscar("AND me.escoteiro_esc_cod = ?", escCod);
+    public PagamentoAtividade[] listarPorEscoteiro(Conexao conexao, int escCod) {
+        return buscar(conexao, "AND me.escoteiro_esc_cod = ?", escCod);
     }
 
-    public PagamentoAtividade buscarPorConta(int crCod) {
-        PagamentoAtividade[] lista = buscar("AND cr.cr_cod = ?", crCod);
+    public PagamentoAtividade buscarPorConta(Conexao conexao, int crCod) {
+        PagamentoAtividade[] lista = buscar(conexao, "AND cr.cr_cod = ?", crCod);
         return lista.length == 0 ? null : lista[0];
     }
 
-    public boolean registrar(PagamentoAtividade pag) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean registrar(Conexao conexao, PagamentoAtividade pag) {
         LocalDate dtPagto = pag.getDataPagamento() != null ? pag.getDataPagamento() : LocalDate.now();
         String descParcela = limitar("Ativ. " + pag.getAtividadeNome());
 
@@ -77,8 +75,7 @@ public class PagamentoAtividadeDAO {
         return true;
     }
 
-    public boolean estornar(PagamentoAtividade pag) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean estornar(Conexao conexao, PagamentoAtividade pag) {
         try (ResultSet rs = conexao.consultar(
                 "SELECT MIN(pg_cod) AS primeiro_pg FROM pagamento WHERE contas_receber_cr_cod = ?",
                 pag.getCrCod())) {
@@ -101,7 +98,7 @@ public class PagamentoAtividadeDAO {
         return false;
     }
 
-    private PagamentoAtividade[] buscar(String condicao, Object... valores) {
+    private PagamentoAtividade[] buscar(Conexao conexao, String condicao, Object... valores) {
         String sql = "SELECT cr.cr_cod, cr.cr_valor, ae.atv_cod, ae.atv_nome, ae.atv_desc, ae.atv_data,"
                 + " me.escoteiro_esc_cod, m.mem_nome, m.mem_cpf, e.esc_sit_fin,"
                 + " MIN(p.pg_dt_vencto) AS vencimento,"
@@ -122,7 +119,7 @@ public class PagamentoAtividadeDAO {
                 + " ORDER BY ae.atv_data DESC, cr.cr_cod DESC";
 
         List<PagamentoAtividade> lista = new ArrayList<>();
-        try (ResultSet rs = SingletonDB.getConexao().consultar(sql, valores)) {
+        try (ResultSet rs = conexao.consultar(sql, valores)) {
             while (rs != null && rs.next()) {
                 PagamentoAtividade item = new PagamentoAtividade();
                 item.setId(rs.getInt("pg_cod"));

@@ -3,6 +3,7 @@ package com.example.sigg_backend.models;
 import java.time.LocalDate;
 
 import com.example.sigg_backend.db.dao.MembroDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Membro {
     private int mem_cod;
@@ -47,12 +48,12 @@ public class Membro {
         return valor != null && !valor.isBlank() && valor.length() <= tamanhoMaximo;
     }
 
-    public boolean cpfJaCadastrado() {
-        return new MembroDAO().existeCpf(CPF);
+    public boolean cpfJaCadastrado(Conexao conexao) {
+        return new MembroDAO().existeCpf(conexao, CPF);
     }
 
-    public Membro buscar(int memCod) {
-        return new MembroDAO().get(memCod);
+    public Membro buscar(Conexao conexao, int memCod) {
+        return new MembroDAO().get(conexao, memCod);
     }
 
     public int getMem_cod() {

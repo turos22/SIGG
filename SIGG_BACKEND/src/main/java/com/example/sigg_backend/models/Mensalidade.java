@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.MensalidadeDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Mensalidade {
     public static final String PAGA = "PAGA";
@@ -65,16 +66,16 @@ public class Mensalidade {
         return ABERTA;
     }
 
-    public boolean gravar() {
-        return new MensalidadeDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new MensalidadeDAO().gravar(conexao, this);
     }
 
-    public List<Mensalidade> doEscoteiro(int escCod) {
-        return new MensalidadeDAO().doEscoteiro(escCod);
+    public List<Mensalidade> doEscoteiro(Conexao conexao, int escCod) {
+        return new MensalidadeDAO().doEscoteiro(conexao, escCod);
     }
 
-    public boolean existe(int escCod, int mes, int ano) {
-        return new MensalidadeDAO().existe(escCod, mes, ano);
+    public boolean existe(Conexao conexao, int escCod, int mes, int ano) {
+        return new MensalidadeDAO().existe(conexao, escCod, mes, ano);
     }
 
     public int getMens_cod() {

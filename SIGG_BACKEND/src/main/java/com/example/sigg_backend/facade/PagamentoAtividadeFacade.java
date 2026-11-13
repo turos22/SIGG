@@ -1,7 +1,7 @@
 package com.example.sigg_backend.facade;
 
-import com.example.sigg_backend.db.dao.PagamentoMensalidadeDAO;
 import com.example.sigg_backend.models.Escoteiro;
+import com.example.sigg_backend.models.PagamentoMensalidade;
 import com.example.sigg_backend.models.FormaPagamento;
 import com.example.sigg_backend.models.PagamentoAtividade;
 import com.example.sigg_backend.models.UsuarioLogado;
@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.example.sigg_backend.db.util.Conexao;
 
 @Service
 public class PagamentoAtividadeFacade {
@@ -24,37 +25,37 @@ public class PagamentoAtividadeFacade {
         this.autorizacao = autorizacao;
     }
 
-    public FormaPagamento[] listarFormasPagamento() {
-        autorizacao.exigirDiretoria();
-        return new PagamentoMensalidadeDAO().listarFormasPagamento();
+    public FormaPagamento[] listarFormasPagamento(Conexao conexao) {
+        autorizacao.exigirDiretoria(conexao);
+        return PagamentoMensalidade.listarFormasPagamento(conexao);
     }
 
-    public Escoteiro[] pesquisarEscoteiros(String busca) {
-        autorizacao.exigirDiretoria();
+    public Escoteiro[] pesquisarEscoteiros(Conexao conexao, String busca) {
+        autorizacao.exigirDiretoria(conexao);
         if (busca == null || busca.isBlank()) {
-            return new PagamentoMensalidadeDAO().listarEscoteirosComResumo();
+            return PagamentoMensalidade.listarEscoteirosComResumo(conexao);
         }
         String termo = busca.trim();
         if (termo.matches("[\\d.\\-]+")) {
             termo = termo.replaceAll("\\D", "");
         }
-        List<Escoteiro> lista = new Escoteiro().pesquisar(termo);
+        List<Escoteiro> lista = new Escoteiro().pesquisar(conexao, termo);
         if (lista.isEmpty()) {
             throw new NaoEncontradoException("Escoteiro não localizado no sistema.");
         }
         return lista.toArray(new Escoteiro[0]);
     }
 
-    public Map<String, Object> consultarAtividadesEscoteiro(int escCod) {
-        autorizacao.exigirDiretoria();
-        Escoteiro escoteiro = new Escoteiro().buscarPorCodigo(escCod);
+    public Map<String, Object> consultarAtividadesEscoteiro(Conexao conexao, int escCod) {
+        autorizacao.exigirDiretoria(conexao);
+        Escoteiro escoteiro = new Escoteiro().buscarPorCodigo(conexao, escCod);
         if (escoteiro == null) {
             throw new NaoEncontradoException("Escoteiro não encontrado.");
         }
 
-        boolean possuiMensalidadeVencida = new PagamentoMensalidadeDAO().possuiMensalidadeVencidaEmAberto(escCod);
+        boolean possuiMensalidadeVencida = PagamentoMensalidade.possuiMensalidadeVencidaEmAberto(conexao, escCod);
         boolean inadimplente = escoteiro.getEsc_sit_fin() == 1 || possuiMensalidadeVencida;
-        PagamentoAtividade[] atividades = PagamentoAtividade.listarPorEscoteiro(escCod);
+        PagamentoAtividade[] atividades = PagamentoAtividade.listarPorEscoteiro(conexao, escCod);
 
         Map<String, Object> resumo = new LinkedHashMap<>();
         resumo.put("esc_cod", escoteiro.getEsc_cod());
@@ -68,20 +69,20 @@ public class PagamentoAtividadeFacade {
     }
 
     @Transactional
-    public Map<String, Object> registrarPagamento(int crCod, BigDecimal valorRecebido, int formaPagamentoCod,
+    public Map<String, Object> registrarPagamento(Conexao conexao, int crCod, BigDecimal valorRecebido, int formaPagamentoCod,
                                                   LocalDate dataPagamento, boolean confirmarDuplicado) {
-        autorizacao.exigirPerfil(List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
+        autorizacao.exigirPerfil(conexao, List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
 
         if (valorRecebido == null || valorRecebido.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RegraNegocioException("O valor recebido deve ser maior que zero.");
         }
 
-        PagamentoAtividade pag = PagamentoAtividade.buscarPorConta(crCod);
+        PagamentoAtividade pag = PagamentoAtividade.buscarPorConta(conexao, crCod);
         if (pag == null) {
             throw new NaoEncontradoException("Inscrição em atividade paga não encontrada.");
         }
 
-        boolean possuiVencida = new PagamentoMensalidadeDAO().possuiMensalidadeVencidaEmAberto(pag.getEscCod());
+        boolean possuiVencida = PagamentoMensalidade.possuiMensalidadeVencidaEmAberto(conexao, pag.getEscCod());
         if (pag.isInadimplente() || possuiVencida) {
             throw new RegraNegocioException(
                     "Este escoteiro está inadimplente. Não é permitido registrar pagamento de atividades pagas enquanto houver mensalidades pendentes. Regularize a situação financeira primeiro."
@@ -113,7 +114,7 @@ public class PagamentoAtividadeFacade {
         }
         pag.setObservacao(obsDivergencia);
 
-        if (!pag.registrar()) {
+        if (!pag.registrar(conexao)) {
             throw new IllegalStateException("Não foi possível registrar o pagamento da atividade.");
         }
 
@@ -136,10 +137,10 @@ public class PagamentoAtividadeFacade {
     }
 
     @Transactional
-    public Map<String, Object> estornarPagamento(int crCod) {
-        autorizacao.exigirPerfil(List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
+    public Map<String, Object> estornarPagamento(Conexao conexao, int crCod) {
+        autorizacao.exigirPerfil(conexao, List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
 
-        PagamentoAtividade pag = PagamentoAtividade.buscarPorConta(crCod);
+        PagamentoAtividade pag = PagamentoAtividade.buscarPorConta(conexao, crCod);
         if (pag == null) {
             throw new NaoEncontradoException("Atividade não encontrada.");
         }
@@ -147,7 +148,7 @@ public class PagamentoAtividadeFacade {
             throw new RegraNegocioException("Esta atividade não possui pagamento registrado para estorno.");
         }
 
-        if (!pag.estornar()) {
+        if (!pag.estornar(conexao)) {
             throw new IllegalStateException("Não foi possível estornar o pagamento da atividade.");
         }
 

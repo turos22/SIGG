@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.EscoteiroDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Escoteiro {
     private Membro membro;
@@ -25,48 +26,48 @@ public class Escoteiro {
         return null;
     }
 
-    public boolean gravar() {
-        return new EscoteiroDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new EscoteiroDAO().gravar(conexao, this);
     }
 
-    public List<Escoteiro> listar() {
-        return new EscoteiroDAO().get();
+    public List<Escoteiro> listar(Conexao conexao) {
+        return new EscoteiroDAO().get(conexao);
     }
 
-    public Escoteiro buscar(int memCod) {
-        return new EscoteiroDAO().get(memCod);
+    public Escoteiro buscar(Conexao conexao, int memCod) {
+        return new EscoteiroDAO().get(conexao, memCod);
     }
 
-    public boolean existe(int memCod) {
-        return new EscoteiroDAO().existe(memCod);
+    public boolean existe(Conexao conexao, int memCod) {
+        return new EscoteiroDAO().existe(conexao, memCod);
     }
 
-    public Escoteiro buscarPorCpf(String cpf) {
-        return new EscoteiroDAO().getPorCpf(cpf);
+    public Escoteiro buscarPorCpf(Conexao conexao, String cpf) {
+        return new EscoteiroDAO().getPorCpf(conexao, cpf);
     }
 
-    public Escoteiro buscarPorCodigo(int escCod) {
-        return new EscoteiroDAO().getPorCodigo(escCod);
+    public Escoteiro buscarPorCodigo(Conexao conexao, int escCod) {
+        return new EscoteiroDAO().getPorCodigo(conexao, escCod);
     }
 
-    public List<Escoteiro> pesquisar(String termo) {
-        return new EscoteiroDAO().pesquisar(termo);
+    public List<Escoteiro> pesquisar(Conexao conexao, String termo) {
+        return new EscoteiroDAO().pesquisar(conexao, termo);
     }
 
-    public List<Escoteiro> doResponsavel(int memCodResponsavel) {
-        return new EscoteiroDAO().doResponsavel(memCodResponsavel);
+    public List<Escoteiro> doResponsavel(Conexao conexao, int memCodResponsavel) {
+        return new EscoteiroDAO().doResponsavel(conexao, memCodResponsavel);
     }
 
-    public List<Escoteiro> adotados() {
-        return new EscoteiroDAO().doAnjo(esc_cod);
+    public List<Escoteiro> adotados(Conexao conexao) {
+        return new EscoteiroDAO().doAnjo(conexao, esc_cod);
     }
 
     public boolean ehAdotado() {
         return anjo > 0 && anjo != esc_cod;
     }
 
-    public boolean vincularAnjo(int escCodAnjo) {
-        if (!new EscoteiroDAO().vincularAnjo(membro.getMem_cod(), escCodAnjo))
+    public boolean vincularAnjo(Conexao conexao, int escCodAnjo) {
+        if (!new EscoteiroDAO().vincularAnjo(conexao, membro.getMem_cod(), escCodAnjo))
             return false;
         anjo = escCodAnjo;
         return true;

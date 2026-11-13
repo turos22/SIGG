@@ -3,6 +3,7 @@ package com.example.sigg_backend.models;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.ResponsavelDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Responsavel {
     private Membro membro;
@@ -11,16 +12,16 @@ public class Responsavel {
     public Responsavel() {
     }
 
-    public boolean gravar() {
-        return new ResponsavelDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new ResponsavelDAO().gravar(conexao, this);
     }
 
-    public List<Responsavel> listar() {
-        return new ResponsavelDAO().get();
+    public List<Responsavel> listar(Conexao conexao) {
+        return new ResponsavelDAO().get(conexao);
     }
 
-    public boolean existe(int memCod) {
-        return new ResponsavelDAO().existe(memCod);
+    public boolean existe(Conexao conexao, int memCod) {
+        return new ResponsavelDAO().existe(conexao, memCod);
     }
 
     public Membro getMembro() {

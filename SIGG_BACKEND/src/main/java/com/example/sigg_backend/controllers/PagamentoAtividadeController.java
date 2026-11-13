@@ -7,31 +7,34 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+import com.example.sigg_backend.db.util.Conexao;
 
 @RestController
 @RequestMapping("/pagamentos-atividade")
 public class PagamentoAtividadeController {
 
+    private final Conexao conexao;
     private final PagamentoAtividadeFacade facade;
 
-    public PagamentoAtividadeController(PagamentoAtividadeFacade facade) {
+    public PagamentoAtividadeController(Conexao conexao, PagamentoAtividadeFacade facade) {
+        this.conexao = conexao;
         this.facade = facade;
     }
 
     @GetMapping("/formas-pagamento")
     public ResponseEntity<Object> listarFormasPagamento() {
-        return ResponseEntity.ok(facade.listarFormasPagamento());
+        return ResponseEntity.ok(facade.listarFormasPagamento(conexao));
     }
 
     @GetMapping("/escoteiros")
     public ResponseEntity<Object> pesquisarEscoteiros(
             @RequestParam(value = "busca", required = false, defaultValue = "") String busca) {
-        return ResponseEntity.ok(facade.pesquisarEscoteiros(busca));
+        return ResponseEntity.ok(facade.pesquisarEscoteiros(conexao, busca));
     }
 
     @GetMapping("/escoteiros/{escCod}")
     public ResponseEntity<Object> consultarAtividades(@PathVariable int escCod) {
-        return ResponseEntity.ok(facade.consultarAtividadesEscoteiro(escCod));
+        return ResponseEntity.ok(facade.consultarAtividadesEscoteiro(conexao, escCod));
     }
 
     @PostMapping("/{crCod}/registrar")
@@ -45,12 +48,12 @@ public class PagamentoAtividadeController {
                 && Boolean.parseBoolean(corpo.get("confirmarDuplicado").toString());
 
         return ResponseEntity.ok(
-                facade.registrarPagamento(crCod, valorRecebido, formaPagamentoCod, dataPagamento, confirmarDuplicado)
+                facade.registrarPagamento(conexao, crCod, valorRecebido, formaPagamentoCod, dataPagamento, confirmarDuplicado)
         );
     }
 
     @DeleteMapping("/{crCod}/estornar")
     public ResponseEntity<Object> estornar(@PathVariable int crCod) {
-        return ResponseEntity.ok(facade.estornarPagamento(crCod));
+        return ResponseEntity.ok(facade.estornarPagamento(conexao, crCod));
     }
 }

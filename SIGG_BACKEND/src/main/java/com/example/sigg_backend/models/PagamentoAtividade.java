@@ -5,6 +5,7 @@ import com.example.sigg_backend.db.dao.PagamentoAtividadeDAO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import com.example.sigg_backend.db.util.Conexao;
 
 @SuppressWarnings("unused")
 public class PagamentoAtividade {
@@ -42,20 +43,20 @@ public class PagamentoAtividade {
         return valorInformado.subtract(base).setScale(2, RoundingMode.HALF_UP);
     }
 
-    public boolean registrar() {
-        return new PagamentoAtividadeDAO().registrar(this);
+    public boolean registrar(Conexao conexao) {
+        return new PagamentoAtividadeDAO().registrar(conexao, this);
     }
 
-    public boolean estornar() {
-        return new PagamentoAtividadeDAO().estornar(this);
+    public boolean estornar(Conexao conexao) {
+        return new PagamentoAtividadeDAO().estornar(conexao, this);
     }
 
-    public static PagamentoAtividade buscarPorConta(int crCod) {
-        return new PagamentoAtividadeDAO().buscarPorConta(crCod);
+    public static PagamentoAtividade buscarPorConta(Conexao conexao, int crCod) {
+        return new PagamentoAtividadeDAO().buscarPorConta(conexao, crCod);
     }
 
-    public static PagamentoAtividade[] listarPorEscoteiro(int escCod) {
-        return new PagamentoAtividadeDAO().listarPorEscoteiro(escCod);
+    public static PagamentoAtividade[] listarPorEscoteiro(Conexao conexao, int escCod) {
+        return new PagamentoAtividadeDAO().listarPorEscoteiro(conexao, escCod);
     }
 
     public int getId() {

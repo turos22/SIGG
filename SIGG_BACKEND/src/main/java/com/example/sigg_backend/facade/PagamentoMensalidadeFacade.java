@@ -1,6 +1,5 @@
 package com.example.sigg_backend.facade;
 
-import com.example.sigg_backend.db.dao.PagamentoMensalidadeDAO;
 import com.example.sigg_backend.models.CategoriaMensalidade;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.FormaPagamento;
@@ -15,6 +14,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.example.sigg_backend.db.util.Conexao;
 
 @Service
 public class PagamentoMensalidadeFacade {
@@ -25,36 +25,36 @@ public class PagamentoMensalidadeFacade {
         this.autorizacao = autorizacao;
     }
 
-    public FormaPagamento[] listarFormasPagamento() {
-        autorizacao.exigirDiretoria();
-        return new PagamentoMensalidadeDAO().listarFormasPagamento();
+    public FormaPagamento[] listarFormasPagamento(Conexao conexao) {
+        autorizacao.exigirDiretoria(conexao);
+        return PagamentoMensalidade.listarFormasPagamento(conexao);
     }
 
-    public Escoteiro[] pesquisarEscoteiros(String busca) {
-        autorizacao.exigirDiretoria();
+    public Escoteiro[] pesquisarEscoteiros(Conexao conexao, String busca) {
+        autorizacao.exigirDiretoria(conexao);
         if (busca == null || busca.isBlank()) {
-            return new PagamentoMensalidadeDAO().listarEscoteirosComResumo();
+            return PagamentoMensalidade.listarEscoteirosComResumo(conexao);
         }
         String termo = busca.trim();
         if (termo.matches("[\\d.\\-]+")) {
             termo = termo.replaceAll("\\D", "");
         }
-        List<Escoteiro> lista = new Escoteiro().pesquisar(termo);
+        List<Escoteiro> lista = new Escoteiro().pesquisar(conexao, termo);
         if (lista.isEmpty()) {
             throw new NaoEncontradoException("Escoteiro não localizado no sistema.");
         }
         return lista.toArray(new Escoteiro[0]);
     }
 
-    public Map<String, Object> consultarSituacaoEscoteiro(int escCod) {
-        autorizacao.exigirDiretoria();
-        Escoteiro escoteiro = new Escoteiro().buscarPorCodigo(escCod);
+    public Map<String, Object> consultarSituacaoEscoteiro(Conexao conexao, int escCod) {
+        autorizacao.exigirDiretoria(conexao);
+        Escoteiro escoteiro = new Escoteiro().buscarPorCodigo(conexao, escCod);
         if (escoteiro == null) {
             throw new NaoEncontradoException("Escoteiro não encontrado.");
         }
 
-        CategoriaMensalidade categoria = CategoriaMensalidade.buscarPorId(escoteiro.getCat_mensalidade());
-        PagamentoMensalidade[] mensalidades = PagamentoMensalidade.listarPorEscoteiro(escCod);
+        CategoriaMensalidade categoria = CategoriaMensalidade.buscarPorId(conexao, escoteiro.getCat_mensalidade());
+        PagamentoMensalidade[] mensalidades = PagamentoMensalidade.listarPorEscoteiro(conexao, escCod);
 
         Map<String, Object> resumo = new LinkedHashMap<>();
         resumo.put("esc_cod", escoteiro.getEsc_cod());
@@ -70,14 +70,14 @@ public class PagamentoMensalidadeFacade {
     }
 
     @Transactional
-    public Map<String, Object> registrarPagamento(int crCod, BigDecimal valorRecebido, int formaPagamentoCod, LocalDate dataPagamento) {
-        autorizacao.exigirPerfil(List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
+    public Map<String, Object> registrarPagamento(Conexao conexao, int crCod, BigDecimal valorRecebido, int formaPagamentoCod, LocalDate dataPagamento) {
+        autorizacao.exigirPerfil(conexao, List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
 
         if (valorRecebido == null || valorRecebido.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RegraNegocioException("O valor recebido deve ser maior que zero.");
         }
 
-        PagamentoMensalidade pag = PagamentoMensalidade.buscarPorConta(crCod);
+        PagamentoMensalidade pag = PagamentoMensalidade.buscarPorConta(conexao, crCod);
         if (pag == null) {
             throw new NaoEncontradoException("Mensalidade não encontrada.");
         }
@@ -103,14 +103,13 @@ public class PagamentoMensalidadeFacade {
         }
         pag.setObservacao(obsDivergencia);
 
-        if (!pag.registrar()) {
+        if (!pag.registrar(conexao)) {
             throw new IllegalStateException("Não foi possível registrar o pagamento da mensalidade.");
         }
 
-        PagamentoMensalidadeDAO dao = new PagamentoMensalidadeDAO();
         boolean regularizado = false;
-        if (pag.isInadimplente() && !dao.possuiMensalidadeVencidaEmAberto(pag.getEscCod())) {
-            dao.atualizarSituacaoFinanceiraEscoteiro(pag.getEscCod(), 0);
+        if (pag.isInadimplente() && !PagamentoMensalidade.possuiMensalidadeVencidaEmAberto(conexao, pag.getEscCod())) {
+            PagamentoMensalidade.atualizarSituacaoFinanceiraEscoteiro(conexao, pag.getEscCod(), 0);
             regularizado = true;
         }
 
@@ -136,10 +135,10 @@ public class PagamentoMensalidadeFacade {
     }
 
     @Transactional
-    public Map<String, Object> estornarPagamento(int crCod) {
-        autorizacao.exigirPerfil(List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
+    public Map<String, Object> estornarPagamento(Conexao conexao, int crCod) {
+        autorizacao.exigirPerfil(conexao, List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
 
-        PagamentoMensalidade pag = PagamentoMensalidade.buscarPorConta(crCod);
+        PagamentoMensalidade pag = PagamentoMensalidade.buscarPorConta(conexao, crCod);
         if (pag == null) {
             throw new NaoEncontradoException("Mensalidade não encontrada.");
         }
@@ -147,13 +146,12 @@ public class PagamentoMensalidadeFacade {
             throw new RegraNegocioException("Esta mensalidade não possui pagamento registrado para estorno.");
         }
 
-        if (!pag.estornar()) {
+        if (!pag.estornar(conexao)) {
             throw new IllegalStateException("Não foi possível estornar o pagamento.");
         }
 
-        PagamentoMensalidadeDAO dao = new PagamentoMensalidadeDAO();
-        if (dao.possuiMensalidadeVencidaEmAberto(pag.getEscCod())) {
-            dao.atualizarSituacaoFinanceiraEscoteiro(pag.getEscCod(), 1);
+        if (PagamentoMensalidade.possuiMensalidadeVencidaEmAberto(conexao, pag.getEscCod())) {
+            PagamentoMensalidade.atualizarSituacaoFinanceiraEscoteiro(conexao, pag.getEscCod(), 1);
         }
 
         return Map.of("mensagem", "Estorno concluído! A mensalidade " + pag.getReferencia() + " foi reaberta.");

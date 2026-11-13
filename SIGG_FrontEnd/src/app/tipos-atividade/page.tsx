@@ -20,14 +20,8 @@ import {
 } from '@/data/services/tiposAtividade'
 
 const colunas: ColunaGrade<TipoAtividade>[] = [
-    { id: 'codigo', titulo: 'Código', valor: (t) => t.atv_cod },
-    { id: 'nome', titulo: 'Nome', valor: (t) => t.atv_nome },
-    {
-        id: 'valor',
-        titulo: 'Valor',
-        valor: (t) => t.atv_valor,
-        renderizar: (t) => `R$ ${Number(t.atv_valor).toFixed(2)}`,
-    },
+    { id: 'codigo', titulo: 'Código', valor: (t) => t.ta_cod },
+    { id: 'descricao', titulo: 'Descrição', valor: (t) => t.ta_desc },
 ]
 
 function extrairMensagemErro(err: unknown, padrao: string): string {
@@ -52,8 +46,7 @@ export default function PaginaTiposAtividade() {
     const [modalAberto, setModalAberto] = useState(false)
     const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
 
-    const [nome, setNome] = useState('')
-    const [valor, setValor] = useState('')
+    const [descricao, setDescricao] = useState('')
     const [filtro, setFiltro] = useState('')
 
     const carregar = async (termo = filtro) => {
@@ -93,8 +86,7 @@ export default function PaginaTiposAtividade() {
 
     const abrirNovo = () => {
         setSelecionado(null)
-        setNome('')
-        setValor('')
+        setDescricao('')
         setErro('')
         setSucesso('')
         setModalAberto(true)
@@ -102,8 +94,7 @@ export default function PaginaTiposAtividade() {
 
     const abrirEdicao = (item: TipoAtividade) => {
         setSelecionado(item)
-        setNome(item.atv_nome)
-        setValor(item.atv_valor.toString())
+        setDescricao(item.ta_desc)
         setErro('')
         setSucesso('')
         setModalAberto(true)
@@ -116,18 +107,13 @@ export default function PaginaTiposAtividade() {
 
         try {
             if (selecionado) {
-                await alterarTipoAtividade(selecionado.atv_cod, {
-                    atv_cod: selecionado.atv_cod,
-                    atv_nome: nome,
-                    atv_valor: parseFloat(valor),
+                await alterarTipoAtividade(selecionado.ta_cod, {
+                    ta_cod: selecionado.ta_cod,
+                    ta_desc: descricao,
                 })
                 setSucesso('Tipo de atividade atualizado com sucesso!')
             } else {
-                await cadastrarTipoAtividade({
-                    atv_cod: 0,
-                    atv_nome: nome,
-                    atv_valor: parseFloat(valor),
-                } as TipoAtividade)
+                await cadastrarTipoAtividade({ ta_desc: descricao })
                 setSucesso('Tipo de atividade cadastrado com sucesso!')
             }
             setModalAberto(false)
@@ -145,7 +131,7 @@ export default function PaginaTiposAtividade() {
         setSucesso('')
 
         try {
-            await apagarTipoAtividade(selecionado.atv_cod)
+            await apagarTipoAtividade(selecionado.ta_cod)
             setSucesso('Tipo de atividade excluído com sucesso!')
             setSelecionado(null)
             await carregar()
@@ -158,7 +144,7 @@ export default function PaginaTiposAtividade() {
         <main className="pagina">
             <header>
                 <h1>Tipos de Atividade</h1>
-                <p className="subtitulo">Gerenciamento das modalidades de atividades e seus respectivos valores</p>
+                <p className="subtitulo">Gerenciamento dos tipos de atividade</p>
             </header>
 
             {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
@@ -174,7 +160,7 @@ export default function PaginaTiposAtividade() {
             >
                 <TextField
                     size="small"
-                    label="Filtrar por nome"
+                    label="Filtrar por descrição"
                     value={filtro}
                     onChange={(e) => setFiltro(e.target.value)}
                 />
@@ -196,18 +182,10 @@ export default function PaginaTiposAtividade() {
                     <DialogContent>
                         <Stack spacing={2} sx={{ mt: 1 }}>
                             <TextField
-                                label="Nome"
-                                value={nome}
-                                onChange={(e) => setNome(e.target.value)}
-                                required
-                                fullWidth
-                            />
-                            <TextField
-                                label="Valor (R$)"
-                                type="number"
-                                slotProps={{ htmlInput: { step: '0.01', min: '0' } }}
-                                value={valor}
-                                onChange={(e) => setValor(e.target.value)}
+                                label="Descrição"
+                                value={descricao}
+                                onChange={(e) => setDescricao(e.target.value)}
+                                slotProps={{ htmlInput: { maxLength: 100 } }}
                                 required
                                 fullWidth
                             />
@@ -222,7 +200,7 @@ export default function PaginaTiposAtividade() {
 
             <DialogoConfirmacao
                 aberto={confirmandoExclusao}
-                mensagem={`Deseja realmente excluir o tipo de atividade "${selecionado?.atv_nome ?? ''}"?`}
+                mensagem={`Deseja realmente excluir o tipo de atividade "${selecionado?.ta_desc ?? ''}"?`}
                 aoConfirmar={handleExcluir}
                 aoCancelar={() => setConfirmandoExclusao(false)}
                 carregando={false}
@@ -233,12 +211,12 @@ export default function PaginaTiposAtividade() {
                 subtitulo={`${tipos.length} ${tipos.length === 1 ? 'registro' : 'registros'}`}
                 colunas={colunas}
                 linhas={tipos}
-                chave={(t) => t.atv_cod}
+                chave={(t) => t.ta_cod}
                 carregando={carregando}
                 textoVazio="Nenhum tipo de atividade encontrado."
                 aoClicarLinha={(linha) => setSelecionado(linha)}
                 aoDuploClique={(linha) => abrirEdicao(linha)}
-                chaveSelecionada={selecionado?.atv_cod ?? null}
+                chaveSelecionada={selecionado?.ta_cod ?? null}
                 linhasPorPagina={10}
                 rodape={
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

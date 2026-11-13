@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.ChefeDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Chefe extends Escoteiro {
     private int chefe_cod;
@@ -26,22 +27,22 @@ public class Chefe extends Escoteiro {
     }
 
     @Override
-    public boolean gravar() {
-        return new ChefeDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new ChefeDAO().gravar(conexao, this);
     }
 
     @Override
-    public Chefe buscar(int memCod) {
-        return new ChefeDAO().get(memCod);
+    public Chefe buscar(Conexao conexao, int memCod) {
+        return new ChefeDAO().get(conexao, memCod);
     }
 
     @Override
-    public boolean existe(int memCod) {
-        return new ChefeDAO().existe(memCod);
+    public boolean existe(Conexao conexao, int memCod) {
+        return new ChefeDAO().existe(conexao, memCod);
     }
 
-    public List<Chefe> listarChefes() {
-        return new ChefeDAO().get();
+    public List<Chefe> listarChefes(Conexao conexao) {
+        return new ChefeDAO().get(conexao);
     }
 
     public int getChefe_cod() {

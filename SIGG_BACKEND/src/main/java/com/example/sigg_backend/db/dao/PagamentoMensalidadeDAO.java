@@ -2,7 +2,6 @@ package com.example.sigg_backend.db.dao;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.FormaPagamento;
 import com.example.sigg_backend.models.PagamentoMensalidade;
@@ -19,9 +18,9 @@ public class PagamentoMensalidadeDAO {
 
     private static final int ATIVIDADE_MENSALIDADE = 1;
 
-    public FormaPagamento[] listarFormasPagamento() {
+    public FormaPagamento[] listarFormasPagamento(Conexao conexao) {
         List<FormaPagamento> lista = new ArrayList<>();
-        try (ResultSet rs = SingletonDB.getConexao().consultar(
+        try (ResultSet rs = conexao.consultar(
                 "SELECT tp_cod, tp_desc FROM tipo_pagamento ORDER BY tp_cod")) {
             while (rs != null && rs.next()) {
                 lista.add(new FormaPagamento(rs.getInt("tp_cod"), rs.getString("tp_desc")));
@@ -32,14 +31,14 @@ public class PagamentoMensalidadeDAO {
         return lista.toArray(new FormaPagamento[0]);
     }
 
-    public Escoteiro[] listarEscoteirosComResumo() {
+    public Escoteiro[] listarEscoteirosComResumo(Conexao conexao) {
         List<Escoteiro> lista = new ArrayList<>();
         String sql = "SELECT m.*, e.*, p.pat_nome FROM escoteiro e"
                 + " JOIN membro m ON m.mem_cod = e.mem_cod"
                 + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
                 + " WHERE m.mem_dt_fim IS NULL"
                 + " ORDER BY e.esc_sit_fin DESC, m.mem_nome ASC";
-        try (ResultSet rs = SingletonDB.getConexao().consultar(sql)) {
+        try (ResultSet rs = conexao.consultar(sql)) {
             EscoteiroDAO escDao = new EscoteiroDAO();
             while (rs != null && rs.next()) {
                 Escoteiro esc = new Escoteiro();
@@ -52,17 +51,16 @@ public class PagamentoMensalidadeDAO {
         return lista.toArray(new Escoteiro[0]);
     }
 
-    public PagamentoMensalidade[] listarPorEscoteiro(int escCod) {
-        return buscar("AND me.escoteiro_esc_cod = ?", escCod);
+    public PagamentoMensalidade[] listarPorEscoteiro(Conexao conexao, int escCod) {
+        return buscar(conexao, "AND me.escoteiro_esc_cod = ?", escCod);
     }
 
-    public PagamentoMensalidade buscarPorConta(int crCod) {
-        PagamentoMensalidade[] lista = buscar("AND cr.cr_cod = ?", crCod);
+    public PagamentoMensalidade buscarPorConta(Conexao conexao, int crCod) {
+        PagamentoMensalidade[] lista = buscar(conexao, "AND cr.cr_cod = ?", crCod);
         return lista.length == 0 ? null : lista[0];
     }
 
-    public boolean registrar(PagamentoMensalidade pag) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean registrar(Conexao conexao, PagamentoMensalidade pag) {
         LocalDate dtPagto = pag.getDataPagamento() != null ? pag.getDataPagamento() : LocalDate.now();
         String descParcela = limitar((pag.getFormaPagamentoCod() == 4 ? "Apadrinhamento " : "Mensalidade ") + pag.getReferencia());
 
@@ -112,8 +110,7 @@ public class PagamentoMensalidadeDAO {
         return true;
     }
 
-    public boolean estornar(PagamentoMensalidade pag) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean estornar(Conexao conexao, PagamentoMensalidade pag) {
         try (ResultSet rs = conexao.consultar(
                 "SELECT MIN(pg_cod) AS primeiro_pg FROM pagamento WHERE contas_receber_cr_cod = ?",
                 pag.getCrCod())) {
@@ -136,8 +133,8 @@ public class PagamentoMensalidadeDAO {
         return false;
     }
 
-    public boolean possuiMensalidadeVencidaEmAberto(int escCod) {
-        try (ResultSet rs = SingletonDB.getConexao().consultar(
+    public boolean possuiMensalidadeVencidaEmAberto(Conexao conexao, int escCod) {
+        try (ResultSet rs = conexao.consultar(
                 "SELECT 1 FROM mensalidade me"
                         + " JOIN contas_receber cr ON cr.mensalidade_mens_cod = me.mens_cod"
                         + " AND cr.atividade_especial_atv_cod = " + ATIVIDADE_MENSALIDADE
@@ -153,14 +150,14 @@ public class PagamentoMensalidadeDAO {
         }
     }
 
-    public void atualizarSituacaoFinanceiraEscoteiro(int escCod, int sitFin) {
-        SingletonDB.getConexao().manipular(
+    public void atualizarSituacaoFinanceiraEscoteiro(Conexao conexao, int escCod, int sitFin) {
+        conexao.manipular(
                 "UPDATE escoteiro SET esc_sit_fin = ? WHERE esc_cod = ?",
                 sitFin, escCod
         );
     }
 
-    private PagamentoMensalidade[] buscar(String condicao, Object... valores) {
+    private PagamentoMensalidade[] buscar(Conexao conexao, String condicao, Object... valores) {
         String sql = "SELECT cr.cr_cod, cr.cr_valor, me.mens_cod, me.mens_mes, me.mens_ano,"
                 + " me.escoteiro_esc_cod, m.mem_nome, m.mem_cpf, e.esc_sit_fin,"
                 + " MIN(p.pg_dt_vencto) AS vencimento,"
@@ -182,7 +179,7 @@ public class PagamentoMensalidadeDAO {
         List<PagamentoMensalidade> lista = new ArrayList<>();
         LocalDate hoje = LocalDate.now();
 
-        try (ResultSet rs = SingletonDB.getConexao().consultar(sql, valores)) {
+        try (ResultSet rs = conexao.consultar(sql, valores)) {
             while (rs != null && rs.next()) {
                 PagamentoMensalidade item = new PagamentoMensalidade();
                 item.setId(rs.getInt("pg_cod"));

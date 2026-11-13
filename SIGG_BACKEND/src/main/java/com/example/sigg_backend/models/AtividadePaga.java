@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.AtividadePagaDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 // RF_F5 Ofertar Novas Atividades Pagas. Uma atividade paga é uma linha de atividade_especial com valor preenchido.
 public class AtividadePaga {
@@ -64,21 +65,21 @@ public class AtividadePaga {
         return null;
     }
 
-    public boolean gravar() {
-        return new AtividadePagaDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new AtividadePagaDAO().gravar(conexao, this);
     }
 
-    public AtividadePaga buscar(int codigo) {
-        return new AtividadePagaDAO().get(codigo);
+    public AtividadePaga buscar(Conexao conexao, int codigo) {
+        return new AtividadePagaDAO().get(conexao, codigo);
     }
 
-    public List<AtividadePaga> listar(boolean somenteAbertas) {
-        return new AtividadePagaDAO().listar(somenteAbertas);
+    public List<AtividadePaga> listar(Conexao conexao, boolean somenteAbertas) {
+        return new AtividadePagaDAO().listar(conexao, somenteAbertas);
     }
 
     // Fluxo alternativo 6.3: mesma atividade = mesmo nome (sem diferenciar maiúsculas) e mesma data.
-    public boolean jaCadastrada() {
-        return new AtividadePagaDAO().existeMesmoNomeEData(nome, data);
+    public boolean jaCadastrada(Conexao conexao) {
+        return new AtividadePagaDAO().existeMesmoNomeEData(conexao, nome, data);
     }
 
     public int getCodigo() {

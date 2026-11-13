@@ -6,7 +6,7 @@ export function buscarTiposAtividade(filtro?: string): Promise<TipoAtividade[]> 
     return requisitar<TipoAtividade[]>(`/tipos-atividade${query}`)
 }
 
-export function cadastrarTipoAtividade(tipo: Omit<TipoAtividade, 'atv_cod'>): Promise<unknown> {
+export function cadastrarTipoAtividade(tipo: Omit<TipoAtividade, 'ta_cod'>): Promise<unknown> {
     return requisitar('/tipos-atividade', {
         method: 'POST',
         body: JSON.stringify(tipo),

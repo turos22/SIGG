@@ -1,6 +1,7 @@
 package com.example.sigg_backend.models;
 
 import com.example.sigg_backend.db.dao.ParametrizacaoDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 // Parametrização do sistema: nome, logo e informações do grupo, guardados no banco (tabela parametrizacao,
 // linha única) para que possam ser trocados sem mexer no código.
@@ -67,12 +68,12 @@ public class Parametrizacao {
         return null;
     }
 
-    public Parametrizacao buscar() {
-        return new ParametrizacaoDAO().get();
+    public Parametrizacao buscar(Conexao conexao) {
+        return new ParametrizacaoDAO().get(conexao);
     }
 
-    public boolean alterar() {
-        return new ParametrizacaoDAO().alterar(this);
+    public boolean alterar(Conexao conexao) {
+        return new ParametrizacaoDAO().alterar(conexao, this);
     }
 
     private static String aparar(String texto) {

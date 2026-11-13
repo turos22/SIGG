@@ -5,7 +5,7 @@ import com.example.sigg_backend.db.dao.PagamentoMensalidadeDAO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
+import com.example.sigg_backend.db.util.Conexao;
 
 @SuppressWarnings("unused")
 public class PagamentoMensalidade {
@@ -40,20 +40,36 @@ public class PagamentoMensalidade {
         return valorInformado.subtract(saldoRestante()).setScale(2, RoundingMode.HALF_UP);
     }
 
-    public boolean registrar() {
-        return new PagamentoMensalidadeDAO().registrar(this);
+    public boolean registrar(Conexao conexao) {
+        return new PagamentoMensalidadeDAO().registrar(conexao, this);
     }
 
-    public boolean estornar() {
-        return new PagamentoMensalidadeDAO().estornar(this);
+    public boolean estornar(Conexao conexao) {
+        return new PagamentoMensalidadeDAO().estornar(conexao, this);
     }
 
-    public static PagamentoMensalidade buscarPorConta(int crCod) {
-        return new PagamentoMensalidadeDAO().buscarPorConta(crCod);
+    public static PagamentoMensalidade buscarPorConta(Conexao conexao, int crCod) {
+        return new PagamentoMensalidadeDAO().buscarPorConta(conexao, crCod);
     }
 
-    public static PagamentoMensalidade[] listarPorEscoteiro(int escCod) {
-        return new PagamentoMensalidadeDAO().listarPorEscoteiro(escCod);
+    public static PagamentoMensalidade[] listarPorEscoteiro(Conexao conexao, int escCod) {
+        return new PagamentoMensalidadeDAO().listarPorEscoteiro(conexao, escCod);
+    }
+
+    public static FormaPagamento[] listarFormasPagamento(Conexao conexao) {
+        return new PagamentoMensalidadeDAO().listarFormasPagamento(conexao);
+    }
+
+    public static Escoteiro[] listarEscoteirosComResumo(Conexao conexao) {
+        return new PagamentoMensalidadeDAO().listarEscoteirosComResumo(conexao);
+    }
+
+    public static boolean possuiMensalidadeVencidaEmAberto(Conexao conexao, int escCod) {
+        return new PagamentoMensalidadeDAO().possuiMensalidadeVencidaEmAberto(conexao, escCod);
+    }
+
+    public static void atualizarSituacaoFinanceiraEscoteiro(Conexao conexao, int escCod, int sitFin) {
+        new PagamentoMensalidadeDAO().atualizarSituacaoFinanceiraEscoteiro(conexao, escCod, sitFin);
     }
 
     public int getId() {

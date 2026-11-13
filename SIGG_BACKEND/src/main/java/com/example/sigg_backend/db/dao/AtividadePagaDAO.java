@@ -10,7 +10,6 @@ import java.util.List;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.AtividadePaga;
 
 // Atividades pagas ficam em atividade_especial: as que têm atv_valor preenchido.
@@ -20,8 +19,7 @@ public class AtividadePagaDAO {
     private static final String COLUNAS = "SELECT atv_cod, atv_nome, atv_desc, atv_data, atv_local, atv_valor,"
             + " atv_vagas, atv_prazo_interesse FROM atividade_especial WHERE atv_valor IS NOT NULL";
 
-    public boolean gravar(AtividadePaga atividade) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, AtividadePaga atividade) {
         // O dump não gera chaves sozinho. MAX+1 pode repetir com dois cadastros simultâneos.
         int ultimo = conexao.getMaxPK("atividade_especial", "atv_cod");
         if (ultimo < 0)
@@ -35,20 +33,20 @@ public class AtividadePagaDAO {
     }
 
     // somenteAbertas: prazo de manifestação ainda não venceu (as antigas, sem prazo, valem pela data da atividade).
-    public List<AtividadePaga> listar(boolean somenteAbertas) {
+    public List<AtividadePaga> listar(Conexao conexao, boolean somenteAbertas) {
         String sql = COLUNAS;
         if (somenteAbertas)
             sql += " AND COALESCE(atv_prazo_interesse, atv_data) >= CURRENT_DATE";
-        return montarLista(SingletonDB.getConexao().consultar(sql + " ORDER BY atv_data DESC, atv_nome"));
+        return montarLista(conexao.consultar(sql + " ORDER BY atv_data DESC, atv_nome"));
     }
 
-    public AtividadePaga get(int codigo) {
-        List<AtividadePaga> lista = montarLista(SingletonDB.getConexao().consultar(COLUNAS + " AND atv_cod = ?", codigo));
+    public AtividadePaga get(Conexao conexao, int codigo) {
+        List<AtividadePaga> lista = montarLista(conexao.consultar(COLUNAS + " AND atv_cod = ?", codigo));
         return lista.isEmpty() ? null : lista.get(0);
     }
 
-    public boolean existeMesmoNomeEData(String nome, LocalDate data) {
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public boolean existeMesmoNomeEData(Conexao conexao, String nome, LocalDate data) {
+        ResultSet rs = conexao.consultar(
                 "SELECT 1 FROM atividade_especial WHERE LOWER(atv_nome) = LOWER(?) AND atv_data = ?", nome, data);
         try {
             return rs != null && rs.next();

@@ -3,7 +3,6 @@ package com.example.sigg_backend.db.dao;
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Mensalidade;
 
 import java.math.BigDecimal;
@@ -20,8 +19,7 @@ public class MensalidadeDAO implements IDAO<Mensalidade> {
     private static final int DIA_VENCIMENTO = 10;
 
     @Override
-    public boolean gravar(Mensalidade mensalidade){
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, Mensalidade mensalidade){
         int ultimaMensalidade = conexao.getMaxPK("mensalidade", "mens_cod");
         int ultimaConta = conexao.getMaxPK("contas_receber", "cr_cod");
         int ultimoPagamento = conexao.getMaxPK("pagamento", "pg_cod");
@@ -50,37 +48,37 @@ public class MensalidadeDAO implements IDAO<Mensalidade> {
     }
 
     @Override
-    public boolean alterar(Mensalidade mensalidade){
+    public boolean alterar(Conexao conexao, Mensalidade mensalidade){
         throw new UnsupportedOperationException("Alteração de mensalidade não implementada");
     }
 
     @Override
-    public boolean apagar(Mensalidade mensalidade){
+    public boolean apagar(Conexao conexao, Mensalidade mensalidade){
         throw new UnsupportedOperationException("Exclusão de mensalidade não implementada");
     }
 
     @Override
-    public List<Mensalidade> get(){
-        return buscar("");
+    public List<Mensalidade> get(Conexao conexao){
+        return buscar(conexao, "");
     }
 
     @Override
-    public List<Mensalidade> get(String filtro){
+    public List<Mensalidade> get(Conexao conexao, String filtro){
         throw new UnsupportedOperationException("Filtro de mensalidade não implementado");
     }
 
     @Override
-    public Mensalidade get(int id){
-        List<Mensalidade> mensalidades = buscar("AND me.mens_cod = ?", id);
+    public Mensalidade get(Conexao conexao, int id){
+        List<Mensalidade> mensalidades = buscar(conexao, "AND me.mens_cod = ?", id);
         return mensalidades.isEmpty() ? null : mensalidades.get(0);
     }
 
-    public List<Mensalidade> doEscoteiro(int escCod){
-        return buscar("AND me.escoteiro_esc_cod = ?", escCod);
+    public List<Mensalidade> doEscoteiro(Conexao conexao, int escCod){
+        return buscar(conexao, "AND me.escoteiro_esc_cod = ?", escCod);
     }
 
-    public boolean existe(int escCod, int mes, int ano){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public boolean existe(Conexao conexao, int escCod, int mes, int ano){
+        ResultSet rs = conexao.consultar(
                 "SELECT 1 FROM mensalidade WHERE escoteiro_esc_cod = ? AND mens_mes = ? AND mens_ano = ?",
                 escCod, mes, ano);
         try {
@@ -109,8 +107,8 @@ public class MensalidadeDAO implements IDAO<Mensalidade> {
         return BigDecimal.valueOf(valor).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private List<Mensalidade> buscar(String condicao, Object... valores){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    private List<Mensalidade> buscar(Conexao conexao, String condicao, Object... valores){
+        ResultSet rs = conexao.consultar(
                 "SELECT me.mens_cod, me.mens_mes, me.mens_ano, me.mens_dt_lancto, me.escoteiro_esc_cod,"
                         + " me.categoria_mensalidade_cat_mens_cod, cr.cr_cod, cr.cr_valor,"
                         + " MIN(p.pg_dt_vencto) AS vencimento, COALESCE(SUM(p.pg_valor_pago), 0) AS valor_pago"

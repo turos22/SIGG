@@ -3,7 +3,6 @@ package com.example.sigg_backend.db.dao;
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Membro;
 
 import java.sql.ResultSet;
@@ -14,8 +13,7 @@ import java.util.List;
 
 public class MembroDAO implements IDAO<Membro> {
     @Override
-    public boolean gravar(Membro membro){
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, Membro membro){
         int ultimo = conexao.getMaxPK("membro", "mem_cod");
         if (ultimo < 0)
             return false;
@@ -31,8 +29,8 @@ public class MembroDAO implements IDAO<Membro> {
                 membro.getDt_ini(), membro.getDt_fim());
     }
     @Override
-    public boolean alterar(Membro membro){
-        return SingletonDB.getConexao().manipular("UPDATE membro SET mem_nome = ?, mem_dt_nascto = ?, mem_cpf = ?, mem_rg = ?,"
+    public boolean alterar(Conexao conexao, Membro membro){
+        return conexao.manipular("UPDATE membro SET mem_nome = ?, mem_dt_nascto = ?, mem_cpf = ?, mem_rg = ?,"
                         + " mem_cep = ?, mem_end = ?, mem_end_num = ?, mem_end_bairro = ?, mem_cidade = ?, mem_estado = ?,"
                         + " mem_tel = ?, mem_email = ?, mem_dt_ini = ?, mem_dt_fim = ? WHERE mem_cod = ?",
                 membro.getNome(), membro.getDt_nascto(), membro.getCPF(), membro.getRG(), membro.getCEP(),
@@ -42,27 +40,27 @@ public class MembroDAO implements IDAO<Membro> {
     }
 
     @Override
-    public boolean apagar(Membro membro){
-        return SingletonDB.getConexao().manipular(
+    public boolean apagar(Conexao conexao, Membro membro){
+        return conexao.manipular(
                 "UPDATE membro SET mem_dt_fim = CURRENT_DATE WHERE mem_cod = ?", membro.getMem_cod());
     }
     @Override
-    public List<Membro> get(){
-        return buscar("");
+    public List<Membro> get(Conexao conexao){
+        return buscar(conexao, "");
     }
     @Override
-    public List<Membro> get(String filtro){
-        return buscar("AND m.mem_nome ILIKE ?", "%" + filtro + "%");
+    public List<Membro> get(Conexao conexao, String filtro){
+        return buscar(conexao, "AND m.mem_nome ILIKE ?", "%" + filtro + "%");
     }
     @Override
-    public Membro get(int id){
-        List<Membro> membros = buscar("AND m.mem_cod = ?", id);
+    public Membro get(Conexao conexao, int id){
+        List<Membro> membros = buscar(conexao, "AND m.mem_cod = ?", id);
         return membros.isEmpty() ? null : membros.get(0);
     }
 
 
-    public boolean existeCpf(String cpf){
-        ResultSet rs = SingletonDB.getConexao().consultar("SELECT 1 FROM membro WHERE mem_cpf = ?", cpf);
+    public boolean existeCpf(Conexao conexao, String cpf){
+        ResultSet rs = conexao.consultar("SELECT 1 FROM membro WHERE mem_cpf = ?", cpf);
         try {
             return rs != null && rs.next();
         } catch (SQLException sqlex) {
@@ -92,8 +90,8 @@ public class MembroDAO implements IDAO<Membro> {
     }
 
 
-    private List<Membro> buscar(String condicao, Object... valores) {
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    private List<Membro> buscar(Conexao conexao, String condicao, Object... valores) {
+        ResultSet rs = conexao.consultar(
                 "SELECT m.* FROM membro m WHERE m.mem_dt_fim IS NULL " + condicao + " ORDER BY m.mem_nome", valores);
         List<Membro> membros = new ArrayList<>();
         try {
