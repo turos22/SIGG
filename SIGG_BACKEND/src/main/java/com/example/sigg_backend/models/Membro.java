@@ -1,6 +1,8 @@
 package com.example.sigg_backend.models;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.example.sigg_backend.db.dao.MembroDAO;
 import com.example.sigg_backend.db.util.Conexao;
@@ -21,6 +23,7 @@ public class Membro {
     private String email;
     private LocalDate dt_ini;
     private LocalDate dt_fim;
+    private List<String> papeis = new ArrayList<>(); // só vem preenchido nas consultas de pessoa
 
     public Membro() {
     }
@@ -68,8 +71,32 @@ public class Membro {
         return new MembroDAO().existeCpf(conexao, CPF);
     }
 
+    public boolean cpfJaCadastradoEmOutro(Conexao conexao) {
+        return new MembroDAO().existeCpfDeOutro(conexao, CPF, mem_cod);
+    }
+
     public Membro buscar(Conexao conexao, int memCod) {
         return new MembroDAO().get(conexao, memCod);
+    }
+
+    public Membro buscarComPapeis(Conexao conexao, int memCod) {
+        return new MembroDAO().getComPapeis(conexao, memCod);
+    }
+
+    public List<Membro> listarComPapeis(Conexao conexao, boolean somenteVoluntarios) {
+        return new MembroDAO().listarComPapeis(conexao, somenteVoluntarios);
+    }
+
+    public boolean gravar(Conexao conexao) {
+        return new MembroDAO().gravar(conexao, this);
+    }
+
+    public boolean alterar(Conexao conexao) {
+        return new MembroDAO().alterar(conexao, this);
+    }
+
+    public boolean apagar(Conexao conexao) {
+        return new MembroDAO().apagar(conexao, this);
     }
 
     public int getMem_cod() {
@@ -190,5 +217,13 @@ public class Membro {
 
     public void setDt_fim(LocalDate dt_fim) {
         this.dt_fim = dt_fim;
+    }
+
+    public List<String> getPapeis() {
+        return papeis;
+    }
+
+    public void setPapeis(List<String> papeis) {
+        this.papeis = papeis;
     }
 }
