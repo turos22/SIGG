@@ -56,3 +56,10 @@ export function gerarSenhaTemporaria(): string {
   }
   return caracteres.join('')
 }
+
+// "150,50" → 150.5; texto vazio ou inválido → null
+export function lerMoeda(texto: string): number | null {
+  if (texto.trim() === '') return null
+  const numero = Number(texto.replace(',', '.'))
+  return Number.isFinite(numero) ? numero : null
+}

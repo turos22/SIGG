@@ -13,6 +13,7 @@ import PaginaTiposAtividade from '@/app/tipos-atividade/page'
 import PaginaCategoriasMensalidade from '@/app/categorias-mensalidade/page'
 import PaginaPagamentosMensalidade from '@/app/pagamentos-mensalidade/page'
 import PaginaPagamentosAtividade from '@/app/pagamentos-atividade/page'
+import PaginaAtividadesPagas from '@/app/atividades-pagas/page'
 import PaginaParametrizacao from '@/app/parametrizacao/page'
 
 export const rotas = createBrowserRouter([
@@ -34,6 +35,7 @@ export const rotas = createBrowserRouter([
       { path: 'categorias-mensalidade', element: <RotaProtegida perfis={PERMISSOES['/categorias-mensalidade']}><PaginaCategoriasMensalidade /></RotaProtegida> },
       { path: 'pagamentos-mensalidade', element: <RotaProtegida perfis={PERMISSOES['/pagamentos-mensalidade']}><PaginaPagamentosMensalidade /></RotaProtegida> },
       { path: 'pagamentos-atividade', element: <RotaProtegida perfis={PERMISSOES['/pagamentos-atividade']}><PaginaPagamentosAtividade /></RotaProtegida> },
+      { path: 'atividades-pagas', element: <RotaProtegida perfis={PERMISSOES['/atividades-pagas']}><PaginaAtividadesPagas /></RotaProtegida> },
       { path: 'parametrizacao', element: <RotaProtegida perfis={PERMISSOES['/parametrizacao']}><PaginaParametrizacao /></RotaProtegida> },
     ],
   },
