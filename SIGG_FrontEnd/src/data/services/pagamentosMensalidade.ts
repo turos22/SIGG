@@ -1,5 +1,6 @@
 import { requisitar } from '@/data/services/api'
 import type Escoteiro from '@/data/models/Escoteiro'
+import type { SituacaoEscoteiro } from '@/data/models/SituacaoEscoteiro'
 import type {
     FormaPagamento,
     ReciboPagamentoMensalidade,
@@ -32,4 +33,12 @@ export function estornarPagamentoMensalidade(crCod: number): Promise<{ mensagem:
     return requisitar(`/pagamentos-mensalidade/${crCod}/estornar`, {
         method: 'DELETE',
     })
+}
+
+export function listarSituacoes(tropa?: number): Promise<SituacaoEscoteiro[]> {
+    return requisitar<SituacaoEscoteiro[]>(tropa ? `/pagamentos-mensalidade/situacoes?tropa=${tropa}` : '/pagamentos-mensalidade/situacoes')
+}
+
+export function marcarInadimplente(escCod: number): Promise<{ mensagem: string }> {
+    return requisitar(`/pagamentos-mensalidade/escoteiros/${escCod}/inadimplente`, { method: 'POST' })
 }
