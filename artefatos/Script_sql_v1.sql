@@ -7,12 +7,19 @@
 -- Data-base : 22/10/2026  (os dados de mensalidade/frequência vão de jan a out/2026)
 -- Encoding  : UTF-8  (há identificadores com acento: "responsável")
 --
--- Como carregar (em um banco NOVO e vazio):
---   createdb sigg_dev
+-- Como carregar:
+--   createdb sigg_dev                                    (banco novo e vazio)
 --   psql -d sigg_dev -v ON_ERROR_STOP=1 -f Script_sql_v1.sql
--- O script só ACRESCENTA (CREATE/INSERT/ALTER): não apaga tabelas nem dados, então
--- NÃO é re-executável. Para recomeçar do zero, recrie o banco (dropdb + createdb).
--- Mudanças novas entram ao final deste mesmo arquivo; não use DROP/TRUNCATE/DELETE aqui.
+-- O script é REEXECUTÁVEL: pode ser colado de novo em um banco que já existe. Ele só ACRESCENTA
+-- o que falta (tabelas, colunas, restrições, índices, funções, gatilhos e linhas de dados) e
+-- NUNCA apaga nem altera dados que já estão lá. Para recomeçar do zero, recrie o banco.
+--   * CREATE TABLE/INDEX ... IF NOT EXISTS, ADD COLUMN IF NOT EXISTS, funções e gatilhos com OR REPLACE
+--   * ADD CONSTRAINT dentro de DO 222565 ... 222565 que só roda se a restrição ainda não existe
+--   * INSERT ... ON CONFLICT DO NOTHING: linhas que já existem (mesma chave) são mantidas como estão
+--   * UPDATE só onde o valor ainda está vazio / ainda não há administrador
+-- Mudanças novas entram ao final deste arquivo, sempre nessa forma (nada de DROP, TRUNCATE ou DELETE).
+-- Limite: assume que o banco veio deste mesmo dump (mesmos códigos). Linhas do dump que alguém
+-- apagou voltam; linhas com a mesma chave mas conteúdo diferente ficam como estão.
 --
 -- ATENÇÃO: todos os dados são FICTÍCIOS (nomes, CPFs com dígito verificador
 -- válido, e-mails @example.com, telefones numa faixa fictícia 189999xxxxx).
@@ -73,42 +80,69 @@ BEGIN;
 -- "ERROR ... maximum allowed length(30)", que são limite do Oracle 11g e não
 -- se aplicam ao PostgreSQL, cujo limite de identificador é 63 bytes)
 -- ----------------------------------------------------------------------------
-CREATE TABLE atividade_especial (
+CREATE TABLE IF NOT EXISTS atividade_especial (
     atv_cod   int4 NOT NULL,
     atv_nome  VARCHAR(30) NOT NULL,
     atv_desc  VARCHAR(200),
     atv_data  DATE NOT NULL,
     atv_valor FLOAT
 );
-ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_pk PRIMARY KEY ( atv_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'atividade_especial'::regclass AND (conname = 'atividade_especial_pk' OR contype = 'p')) THEN
+        ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_pk PRIMARY KEY ( atv_cod );
+    END IF;
+END $$;
 
-CREATE TABLE categoria_mensalidade (
+CREATE TABLE IF NOT EXISTS categoria_mensalidade (
     cat_mens_cod       int4 NOT NULL,
     cat_mens_valor     FLOAT NOT NULL,
     cat_mens_qtd_irmao int4 NOT NULL
 );
-ALTER TABLE categoria_mensalidade ADD CONSTRAINT categoria_mensalidade_pk PRIMARY KEY ( cat_mens_cod );
+-- cat_mens_desc: o CategoriaMensalidadeDAO lê e grava a descrição; o modelo original não tinha a coluna
+ALTER TABLE categoria_mensalidade ADD COLUMN IF NOT EXISTS cat_mens_desc VARCHAR(100);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'categoria_mensalidade'::regclass AND (conname = 'categoria_mensalidade_pk' OR contype = 'p')) THEN
+        ALTER TABLE categoria_mensalidade ADD CONSTRAINT categoria_mensalidade_pk PRIMARY KEY ( cat_mens_cod );
+    END IF;
+END $$;
 
-CREATE TABLE chefe (
+CREATE TABLE IF NOT EXISTS chefe (
     mem_cod          int4 NOT NULL,
     chefe_cod        int4 NOT NULL,
     chefe_gestao_ini DATE,
     chefe_gestao_fim DATE,
     tropa_tro_cod    int4 NOT NULL
 );
-ALTER TABLE chefe ADD CONSTRAINT chefe_pk PRIMARY KEY ( mem_cod );
-ALTER TABLE chefe ADD CONSTRAINT chefe_pkv1 UNIQUE ( chefe_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'chefe'::regclass AND (conname = 'chefe_pk' OR contype = 'p')) THEN
+        ALTER TABLE chefe ADD CONSTRAINT chefe_pk PRIMARY KEY ( mem_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'chefe'::regclass AND (conname = 'chefe_pkv1')) THEN
+        ALTER TABLE chefe ADD CONSTRAINT chefe_pkv1 UNIQUE ( chefe_cod );
+    END IF;
+END $$;
 
-CREATE TABLE contas_receber (
+CREATE TABLE IF NOT EXISTS contas_receber (
     cr_cod                     int4 NOT NULL,
     cr_valor                   FLOAT NOT NULL,
     cr_desc                    VARCHAR(30),
     atividade_especial_atv_cod int4 NOT NULL,
     mensalidade_mens_cod       int4 NOT NULL
 );
-ALTER TABLE contas_receber ADD CONSTRAINT contas_receber_pk PRIMARY KEY ( cr_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contas_receber'::regclass AND (conname = 'contas_receber_pk' OR contype = 'p')) THEN
+        ALTER TABLE contas_receber ADD CONSTRAINT contas_receber_pk PRIMARY KEY ( cr_cod );
+    END IF;
+END $$;
 
-CREATE TABLE escoteiro (
+CREATE TABLE IF NOT EXISTS escoteiro (
     mem_cod                            int4 NOT NULL,
     esc_cod                            int4 NOT NULL,
     categoria_mensalidade_cat_mens_cod int4 NOT NULL,
@@ -116,33 +150,63 @@ CREATE TABLE escoteiro (
     patrulha_pat_cod2                  int4 NOT NULL,
     esc_sit_fin                        int4
 );
-ALTER TABLE escoteiro ADD CONSTRAINT escoteiro_pk PRIMARY KEY ( mem_cod );
-ALTER TABLE escoteiro ADD CONSTRAINT escoteiro_pkv1 UNIQUE ( esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro'::regclass AND (conname = 'escoteiro_pk' OR contype = 'p')) THEN
+        ALTER TABLE escoteiro ADD CONSTRAINT escoteiro_pk PRIMARY KEY ( mem_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro'::regclass AND (conname = 'escoteiro_pkv1')) THEN
+        ALTER TABLE escoteiro ADD CONSTRAINT escoteiro_pkv1 UNIQUE ( esc_cod );
+    END IF;
+END $$;
 
-CREATE TABLE escoteiro_responsavel (
+CREATE TABLE IF NOT EXISTS escoteiro_responsavel (
     responsável_mem_cod int4 NOT NULL,
     escoteiro_mem_cod   int4 NOT NULL
 );
-ALTER TABLE escoteiro_responsavel ADD CONSTRAINT escoteiro_responsavel_pk PRIMARY KEY ( responsável_mem_cod,
-                                                                                        escoteiro_mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro_responsavel'::regclass AND (conname = 'escoteiro_responsavel_pk' OR contype = 'p')) THEN
+        ALTER TABLE escoteiro_responsavel ADD CONSTRAINT escoteiro_responsavel_pk PRIMARY KEY ( responsável_mem_cod,
+                                                                                                escoteiro_mem_cod );
+    END IF;
+END $$;
 
-CREATE TABLE financeiro (
+CREATE TABLE IF NOT EXISTS financeiro (
     mem_cod int4 NOT NULL,
     fin_cod int4 NOT NULL
 );
-ALTER TABLE financeiro ADD CONSTRAINT financeiro_pk PRIMARY KEY ( mem_cod );
-ALTER TABLE financeiro ADD CONSTRAINT financeiro_fin_cod_un UNIQUE ( fin_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'financeiro'::regclass AND (conname = 'financeiro_pk' OR contype = 'p')) THEN
+        ALTER TABLE financeiro ADD CONSTRAINT financeiro_pk PRIMARY KEY ( mem_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'financeiro'::regclass AND (conname = 'financeiro_fin_cod_un')) THEN
+        ALTER TABLE financeiro ADD CONSTRAINT financeiro_fin_cod_un UNIQUE ( fin_cod );
+    END IF;
+END $$;
 
-CREATE TABLE frequencia (
+CREATE TABLE IF NOT EXISTS frequencia (
     freq_cod                   int4 NOT NULL,
     freq_data                  DATE NOT NULL,
     freq_status                VARCHAR(1) NOT NULL,
     escoteiro_esc_cod          int4 NOT NULL,
     atividade_especial_atv_cod int4 NOT NULL
 );
-ALTER TABLE frequencia ADD CONSTRAINT frequencia_pk PRIMARY KEY ( freq_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'frequencia'::regclass AND (conname = 'frequencia_pk' OR contype = 'p')) THEN
+        ALTER TABLE frequencia ADD CONSTRAINT frequencia_pk PRIMARY KEY ( freq_cod );
+    END IF;
+END $$;
 
-CREATE TABLE membro (
+CREATE TABLE IF NOT EXISTS membro (
     mem_cod        int4 NOT NULL,
     mem_nome       VARCHAR(30) NOT NULL,
     mem_dt_nascto  DATE NOT NULL,
@@ -159,9 +223,14 @@ CREATE TABLE membro (
     mem_dt_ini     DATE NOT NULL,
     mem_dt_fim     DATE
 );
-ALTER TABLE membro ADD CONSTRAINT membro_pk PRIMARY KEY ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'membro'::regclass AND (conname = 'membro_pk' OR contype = 'p')) THEN
+        ALTER TABLE membro ADD CONSTRAINT membro_pk PRIMARY KEY ( mem_cod );
+    END IF;
+END $$;
 
-CREATE TABLE mensalidade (
+CREATE TABLE IF NOT EXISTS mensalidade (
     mens_cod                           int4 NOT NULL,
     mens_mes                           int4 NOT NULL,
     mens_ano                           int4 NOT NULL,
@@ -170,9 +239,14 @@ CREATE TABLE mensalidade (
     escoteiro_esc_cod                  int4 NOT NULL,
     categoria_mensalidade_cat_mens_cod int4 NOT NULL
 );
-ALTER TABLE mensalidade ADD CONSTRAINT mensalidade_pk PRIMARY KEY ( mens_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'mensalidade'::regclass AND (conname = 'mensalidade_pk' OR contype = 'p')) THEN
+        ALTER TABLE mensalidade ADD CONSTRAINT mensalidade_pk PRIMARY KEY ( mens_cod );
+    END IF;
+END $$;
 
-CREATE TABLE pagamento (
+CREATE TABLE IF NOT EXISTS pagamento (
     pg_cod                int4 NOT NULL,
     pg_dt_pagto           DATE,
     pg_dt_vencto          DATE NOT NULL,
@@ -181,58 +255,108 @@ CREATE TABLE pagamento (
     contas_receber_cr_cod int4 NOT NULL,
     pg_valor_pago         FLOAT NOT NULL
 );
-ALTER TABLE pagamento ADD CONSTRAINT pagamento_pk PRIMARY KEY ( pg_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pagamento'::regclass AND (conname = 'pagamento_pk' OR contype = 'p')) THEN
+        ALTER TABLE pagamento ADD CONSTRAINT pagamento_pk PRIMARY KEY ( pg_cod );
+    END IF;
+END $$;
 
-CREATE TABLE patrulha (
+CREATE TABLE IF NOT EXISTS patrulha (
     pat_cod          int4 NOT NULL,
     pat_nome         VARCHAR(20) NOT NULL,
     pat_lider_cod    int4 NOT NULL,
     pat_sublider_cod int4,
     tropa_tro_cod    int4 NOT NULL
 );
-ALTER TABLE patrulha ADD CONSTRAINT patrulha_pk PRIMARY KEY ( pat_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'patrulha'::regclass AND (conname = 'patrulha_pk' OR contype = 'p')) THEN
+        ALTER TABLE patrulha ADD CONSTRAINT patrulha_pk PRIMARY KEY ( pat_cod );
+    END IF;
+END $$;
 
-CREATE TABLE presidente (
+CREATE TABLE IF NOT EXISTS presidente (
     mem_cod         int4 NOT NULL,
     pres_cod        int4 NOT NULL,
     pres_gestao_ini DATE NOT NULL,
     pres_gestao_fim DATE NOT NULL
 );
-ALTER TABLE presidente ADD CONSTRAINT presidente_pk PRIMARY KEY ( mem_cod );
-ALTER TABLE presidente ADD CONSTRAINT presidente_pkv1 UNIQUE ( pres_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'presidente'::regclass AND (conname = 'presidente_pk' OR contype = 'p')) THEN
+        ALTER TABLE presidente ADD CONSTRAINT presidente_pk PRIMARY KEY ( mem_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'presidente'::regclass AND (conname = 'presidente_pkv1')) THEN
+        ALTER TABLE presidente ADD CONSTRAINT presidente_pkv1 UNIQUE ( pres_cod );
+    END IF;
+END $$;
 
-CREATE TABLE responsável (
+CREATE TABLE IF NOT EXISTS responsável (
     mem_cod  int4 NOT NULL,
     resp_cod int4 NOT NULL
 );
-ALTER TABLE responsável ADD CONSTRAINT responsável_pk PRIMARY KEY ( mem_cod );
-ALTER TABLE responsável ADD CONSTRAINT responsável_pkv1 UNIQUE ( resp_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'responsável'::regclass AND (conname = 'responsável_pk' OR contype = 'p')) THEN
+        ALTER TABLE responsável ADD CONSTRAINT responsável_pk PRIMARY KEY ( mem_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'responsável'::regclass AND (conname = 'responsável_pkv1')) THEN
+        ALTER TABLE responsável ADD CONSTRAINT responsável_pkv1 UNIQUE ( resp_cod );
+    END IF;
+END $$;
 
-CREATE TABLE tipo_pagamento (
+CREATE TABLE IF NOT EXISTS tipo_pagamento (
     tp_cod  int4 NOT NULL,
     tp_desc VARCHAR(30) NOT NULL
 );
-ALTER TABLE tipo_pagamento ADD CONSTRAINT tipo_pagamento_pk PRIMARY KEY ( tp_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'tipo_pagamento'::regclass AND (conname = 'tipo_pagamento_pk' OR contype = 'p')) THEN
+        ALTER TABLE tipo_pagamento ADD CONSTRAINT tipo_pagamento_pk PRIMARY KEY ( tp_cod );
+    END IF;
+END $$;
 
-CREATE TABLE tropa (
+CREATE TABLE IF NOT EXISTS tropa (
     tro_cod  int4 NOT NULL,
     tro_nome VARCHAR(20) NOT NULL
 );
-ALTER TABLE tropa ADD CONSTRAINT tropa_pk PRIMARY KEY ( tro_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'tropa'::regclass AND (conname = 'tropa_pk' OR contype = 'p')) THEN
+        ALTER TABLE tropa ADD CONSTRAINT tropa_pk PRIMARY KEY ( tro_cod );
+    END IF;
+END $$;
 
-CREATE TABLE contribuicao (
+CREATE TABLE IF NOT EXISTS contribuicao (
     con_cod         int4 NOT NULL,
     con_dt          DATE NOT NULL,
     con_dt_fim      DATE,
     anjo_esc_cod    int4 NOT NULL,
     adotado_esc_cod int4 NOT NULL
 );
-ALTER TABLE contribuicao ADD CONSTRAINT contribuicao_pk PRIMARY KEY ( con_cod );
-ALTER TABLE contribuicao ADD CONSTRAINT contribuicao_anjo_adotado_ck CHECK ( anjo_esc_cod <> adotado_esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contribuicao'::regclass AND (conname = 'contribuicao_pk' OR contype = 'p')) THEN
+        ALTER TABLE contribuicao ADD CONSTRAINT contribuicao_pk PRIMARY KEY ( con_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contribuicao'::regclass AND (conname = 'contribuicao_anjo_adotado_ck')) THEN
+        ALTER TABLE contribuicao ADD CONSTRAINT contribuicao_anjo_adotado_ck CHECK ( anjo_esc_cod <> adotado_esc_cod );
+    END IF;
+END $$;
 
-CREATE UNIQUE INDEX contribuicao_adotado_ativo_ux ON contribuicao ( adotado_esc_cod ) WHERE con_dt_fim IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS contribuicao_adotado_ativo_ux ON contribuicao ( adotado_esc_cod ) WHERE con_dt_fim IS NULL;
 
-CREATE TABLE conta (
+CREATE TABLE IF NOT EXISTS conta (
     cta_cod          int4 NOT NULL,
     mem_cod          int4 NOT NULL,
     cta_senha        VARCHAR(100) NOT NULL,
@@ -242,14 +366,34 @@ CREATE TABLE conta (
     cta_bloqueio_ate TIMESTAMP,
     cta_dt_criacao   DATE NOT NULL DEFAULT CURRENT_DATE
 );
-ALTER TABLE conta ADD CONSTRAINT conta_pk PRIMARY KEY ( cta_cod );
-ALTER TABLE conta ADD CONSTRAINT conta_membro_un UNIQUE ( mem_cod );
-ALTER TABLE conta ADD CONSTRAINT conta_situacao_ck CHECK ( cta_situacao IN ('A', 'P', 'I') );
-ALTER TABLE conta
-    ADD CONSTRAINT conta_membro_fk FOREIGN KEY ( mem_cod )
-        REFERENCES membro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta'::regclass AND (conname = 'conta_pk' OR contype = 'p')) THEN
+        ALTER TABLE conta ADD CONSTRAINT conta_pk PRIMARY KEY ( cta_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta'::regclass AND (conname = 'conta_membro_un')) THEN
+        ALTER TABLE conta ADD CONSTRAINT conta_membro_un UNIQUE ( mem_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta'::regclass AND (conname = 'conta_situacao_ck')) THEN
+        ALTER TABLE conta ADD CONSTRAINT conta_situacao_ck CHECK ( cta_situacao IN ('A', 'P', 'I') );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta'::regclass AND (conname = 'conta_membro_fk')) THEN
+        ALTER TABLE conta
+            ADD CONSTRAINT conta_membro_fk FOREIGN KEY ( mem_cod )
+                REFERENCES membro ( mem_cod );
+    END IF;
+END $$;
 
-CREATE TABLE conta_token (
+CREATE TABLE IF NOT EXISTS conta_token (
     tok_cod      int4 NOT NULL,
     cta_cod      int4 NOT NULL,
     tok_hash     CHAR(64) NOT NULL,
@@ -257,14 +401,34 @@ CREATE TABLE conta_token (
     tok_expira   TIMESTAMP NOT NULL,
     tok_usado_em TIMESTAMP
 );
-ALTER TABLE conta_token ADD CONSTRAINT conta_token_pk PRIMARY KEY ( tok_cod );
-ALTER TABLE conta_token ADD CONSTRAINT conta_token_hash_un UNIQUE ( tok_hash );
-ALTER TABLE conta_token ADD CONSTRAINT conta_token_tipo_ck CHECK ( tok_tipo IN ('CONFIRMACAO', 'REDEFINICAO') );
-ALTER TABLE conta_token
-    ADD CONSTRAINT conta_token_conta_fk FOREIGN KEY ( cta_cod )
-        REFERENCES conta ( cta_cod ) ON DELETE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta_token'::regclass AND (conname = 'conta_token_pk' OR contype = 'p')) THEN
+        ALTER TABLE conta_token ADD CONSTRAINT conta_token_pk PRIMARY KEY ( tok_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta_token'::regclass AND (conname = 'conta_token_hash_un')) THEN
+        ALTER TABLE conta_token ADD CONSTRAINT conta_token_hash_un UNIQUE ( tok_hash );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta_token'::regclass AND (conname = 'conta_token_tipo_ck')) THEN
+        ALTER TABLE conta_token ADD CONSTRAINT conta_token_tipo_ck CHECK ( tok_tipo IN ('CONFIRMACAO', 'REDEFINICAO') );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'conta_token'::regclass AND (conname = 'conta_token_conta_fk')) THEN
+        ALTER TABLE conta_token
+            ADD CONSTRAINT conta_token_conta_fk FOREIGN KEY ( cta_cod )
+                REFERENCES conta ( cta_cod ) ON DELETE CASCADE;
+    END IF;
+END $$;
 
-CREATE FUNCTION conta_exige_maior_de_idade() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION conta_exige_maior_de_idade() RETURNS TRIGGER AS $$
 BEGIN
     IF (SELECT m.mem_dt_nascto FROM membro m WHERE m.mem_cod = NEW.mem_cod) > CURRENT_DATE - INTERVAL '18 years' THEN
         RAISE EXCEPTION 'Somente maiores de idade podem ter conta no sistema (membro %)', NEW.mem_cod;
@@ -273,7 +437,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER conta_maior_de_idade_tg
+CREATE OR REPLACE TRIGGER conta_maior_de_idade_tg
     BEFORE INSERT OR UPDATE OF mem_cod ON conta
     FOR EACH ROW EXECUTE FUNCTION conta_exige_maior_de_idade();
 
@@ -300,7 +464,7 @@ CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
         REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
 );
 
-CREATE FUNCTION conta_preserva_administrador() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION conta_preserva_administrador() RETURNS TRIGGER AS $$
 BEGIN
     IF OLD.cta_admin AND OLD.cta_situacao = 'A'
        AND (TG_OP = 'DELETE' OR NOT (NEW.cta_admin AND NEW.cta_situacao = 'A')) THEN
@@ -321,11 +485,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER conta_preserva_administrador_tg
+CREATE OR REPLACE TRIGGER conta_preserva_administrador_tg
     BEFORE UPDATE OF cta_admin, cta_situacao OR DELETE ON conta
     FOR EACH ROW EXECUTE FUNCTION conta_preserva_administrador();
 
-CREATE FUNCTION membro_preserva_administrador() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION membro_preserva_administrador() RETURNS TRIGGER AS $$
 BEGIN
     IF OLD.mem_dt_fim IS NULL AND NEW.mem_dt_fim IS NOT NULL
        AND EXISTS (SELECT 1 FROM conta c WHERE c.mem_cod = OLD.mem_cod AND c.cta_admin AND c.cta_situacao = 'A') THEN
@@ -343,98 +507,208 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER membro_preserva_administrador_tg
+CREATE OR REPLACE TRIGGER membro_preserva_administrador_tg
     BEFORE UPDATE OF mem_dt_fim ON membro
     FOR EACH ROW EXECUTE FUNCTION membro_preserva_administrador();
 
 -- Chaves estrangeiras
-ALTER TABLE chefe
-    ADD CONSTRAINT chefe_escoteiro_fk FOREIGN KEY ( mem_cod )
-        REFERENCES escoteiro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'chefe'::regclass AND (conname = 'chefe_escoteiro_fk')) THEN
+        ALTER TABLE chefe
+            ADD CONSTRAINT chefe_escoteiro_fk FOREIGN KEY ( mem_cod )
+                REFERENCES escoteiro ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE chefe
-    ADD CONSTRAINT chefe_tropa_fk FOREIGN KEY ( tropa_tro_cod )
-        REFERENCES tropa ( tro_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'chefe'::regclass AND (conname = 'chefe_tropa_fk')) THEN
+        ALTER TABLE chefe
+            ADD CONSTRAINT chefe_tropa_fk FOREIGN KEY ( tropa_tro_cod )
+                REFERENCES tropa ( tro_cod );
+    END IF;
+END $$;
 
-ALTER TABLE contas_receber
-    ADD CONSTRAINT contas_receber_atividade_especial_fk FOREIGN KEY ( atividade_especial_atv_cod )
-        REFERENCES atividade_especial ( atv_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contas_receber'::regclass AND (conname = 'contas_receber_atividade_especial_fk')) THEN
+        ALTER TABLE contas_receber
+            ADD CONSTRAINT contas_receber_atividade_especial_fk FOREIGN KEY ( atividade_especial_atv_cod )
+                REFERENCES atividade_especial ( atv_cod );
+    END IF;
+END $$;
 
-ALTER TABLE contas_receber
-    ADD CONSTRAINT contas_receber_mensalidade_fk FOREIGN KEY ( mensalidade_mens_cod )
-        REFERENCES mensalidade ( mens_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contas_receber'::regclass AND (conname = 'contas_receber_mensalidade_fk')) THEN
+        ALTER TABLE contas_receber
+            ADD CONSTRAINT contas_receber_mensalidade_fk FOREIGN KEY ( mensalidade_mens_cod )
+                REFERENCES mensalidade ( mens_cod );
+    END IF;
+END $$;
 
-ALTER TABLE escoteiro
-    ADD CONSTRAINT escoteiro_categoria_mensalidade_fk FOREIGN KEY ( categoria_mensalidade_cat_mens_cod )
-        REFERENCES categoria_mensalidade ( cat_mens_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro'::regclass AND (conname = 'escoteiro_categoria_mensalidade_fk')) THEN
+        ALTER TABLE escoteiro
+            ADD CONSTRAINT escoteiro_categoria_mensalidade_fk FOREIGN KEY ( categoria_mensalidade_cat_mens_cod )
+                REFERENCES categoria_mensalidade ( cat_mens_cod );
+    END IF;
+END $$;
 
-ALTER TABLE escoteiro
-    ADD CONSTRAINT escoteiro_escoteiro_fk FOREIGN KEY ( escoteiro_esc_cod )
-        REFERENCES escoteiro ( esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro'::regclass AND (conname = 'escoteiro_escoteiro_fk')) THEN
+        ALTER TABLE escoteiro
+            ADD CONSTRAINT escoteiro_escoteiro_fk FOREIGN KEY ( escoteiro_esc_cod )
+                REFERENCES escoteiro ( esc_cod );
+    END IF;
+END $$;
 
-ALTER TABLE escoteiro
-    ADD CONSTRAINT escoteiro_membro_fk FOREIGN KEY ( mem_cod )
-        REFERENCES membro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro'::regclass AND (conname = 'escoteiro_membro_fk')) THEN
+        ALTER TABLE escoteiro
+            ADD CONSTRAINT escoteiro_membro_fk FOREIGN KEY ( mem_cod )
+                REFERENCES membro ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE escoteiro
-    ADD CONSTRAINT escoteiro_patrulha_fkv2 FOREIGN KEY ( patrulha_pat_cod2 )
-        REFERENCES patrulha ( pat_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro'::regclass AND (conname = 'escoteiro_patrulha_fkv2')) THEN
+        ALTER TABLE escoteiro
+            ADD CONSTRAINT escoteiro_patrulha_fkv2 FOREIGN KEY ( patrulha_pat_cod2 )
+                REFERENCES patrulha ( pat_cod );
+    END IF;
+END $$;
 
-ALTER TABLE escoteiro_responsavel
-    ADD CONSTRAINT escoteiro_responsavel_escoteiro_fk FOREIGN KEY ( escoteiro_mem_cod )
-        REFERENCES escoteiro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro_responsavel'::regclass AND (conname = 'escoteiro_responsavel_escoteiro_fk')) THEN
+        ALTER TABLE escoteiro_responsavel
+            ADD CONSTRAINT escoteiro_responsavel_escoteiro_fk FOREIGN KEY ( escoteiro_mem_cod )
+                REFERENCES escoteiro ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE escoteiro_responsavel
-    ADD CONSTRAINT escoteiro_responsavel_responsável_fk FOREIGN KEY ( responsável_mem_cod )
-        REFERENCES responsável ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'escoteiro_responsavel'::regclass AND (conname = 'escoteiro_responsavel_responsável_fk')) THEN
+        ALTER TABLE escoteiro_responsavel
+            ADD CONSTRAINT escoteiro_responsavel_responsável_fk FOREIGN KEY ( responsável_mem_cod )
+                REFERENCES responsável ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE financeiro
-    ADD CONSTRAINT financeiro_membro_fk FOREIGN KEY ( mem_cod )
-        REFERENCES membro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'financeiro'::regclass AND (conname = 'financeiro_membro_fk')) THEN
+        ALTER TABLE financeiro
+            ADD CONSTRAINT financeiro_membro_fk FOREIGN KEY ( mem_cod )
+                REFERENCES membro ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE frequencia
-    ADD CONSTRAINT frequencia_atividade_especial_fk FOREIGN KEY ( atividade_especial_atv_cod )
-        REFERENCES atividade_especial ( atv_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'frequencia'::regclass AND (conname = 'frequencia_atividade_especial_fk')) THEN
+        ALTER TABLE frequencia
+            ADD CONSTRAINT frequencia_atividade_especial_fk FOREIGN KEY ( atividade_especial_atv_cod )
+                REFERENCES atividade_especial ( atv_cod );
+    END IF;
+END $$;
 
-ALTER TABLE frequencia
-    ADD CONSTRAINT frequencia_escoteiro_fk FOREIGN KEY ( escoteiro_esc_cod )
-        REFERENCES escoteiro ( esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'frequencia'::regclass AND (conname = 'frequencia_escoteiro_fk')) THEN
+        ALTER TABLE frequencia
+            ADD CONSTRAINT frequencia_escoteiro_fk FOREIGN KEY ( escoteiro_esc_cod )
+                REFERENCES escoteiro ( esc_cod );
+    END IF;
+END $$;
 
-ALTER TABLE mensalidade
-    ADD CONSTRAINT mensalidade_categoria_mensalidade_fk FOREIGN KEY ( categoria_mensalidade_cat_mens_cod )
-        REFERENCES categoria_mensalidade ( cat_mens_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'mensalidade'::regclass AND (conname = 'mensalidade_categoria_mensalidade_fk')) THEN
+        ALTER TABLE mensalidade
+            ADD CONSTRAINT mensalidade_categoria_mensalidade_fk FOREIGN KEY ( categoria_mensalidade_cat_mens_cod )
+                REFERENCES categoria_mensalidade ( cat_mens_cod );
+    END IF;
+END $$;
 
-ALTER TABLE mensalidade
-    ADD CONSTRAINT mensalidade_escoteiro_fk FOREIGN KEY ( escoteiro_esc_cod )
-        REFERENCES escoteiro ( esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'mensalidade'::regclass AND (conname = 'mensalidade_escoteiro_fk')) THEN
+        ALTER TABLE mensalidade
+            ADD CONSTRAINT mensalidade_escoteiro_fk FOREIGN KEY ( escoteiro_esc_cod )
+                REFERENCES escoteiro ( esc_cod );
+    END IF;
+END $$;
 
-ALTER TABLE pagamento
-    ADD CONSTRAINT pagamento_contas_receber_fk FOREIGN KEY ( contas_receber_cr_cod )
-        REFERENCES contas_receber ( cr_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pagamento'::regclass AND (conname = 'pagamento_contas_receber_fk')) THEN
+        ALTER TABLE pagamento
+            ADD CONSTRAINT pagamento_contas_receber_fk FOREIGN KEY ( contas_receber_cr_cod )
+                REFERENCES contas_receber ( cr_cod );
+    END IF;
+END $$;
 
-ALTER TABLE pagamento
-    ADD CONSTRAINT pagamento_tipo_pagamento_fk FOREIGN KEY ( tipo_pagamento_tp_cod )
-        REFERENCES tipo_pagamento ( tp_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pagamento'::regclass AND (conname = 'pagamento_tipo_pagamento_fk')) THEN
+        ALTER TABLE pagamento
+            ADD CONSTRAINT pagamento_tipo_pagamento_fk FOREIGN KEY ( tipo_pagamento_tp_cod )
+                REFERENCES tipo_pagamento ( tp_cod );
+    END IF;
+END $$;
 
-ALTER TABLE patrulha
-    ADD CONSTRAINT patrulha_tropa_fk FOREIGN KEY ( tropa_tro_cod )
-        REFERENCES tropa ( tro_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'patrulha'::regclass AND (conname = 'patrulha_tropa_fk')) THEN
+        ALTER TABLE patrulha
+            ADD CONSTRAINT patrulha_tropa_fk FOREIGN KEY ( tropa_tro_cod )
+                REFERENCES tropa ( tro_cod );
+    END IF;
+END $$;
 
-ALTER TABLE presidente
-    ADD CONSTRAINT presidente_escoteiro_fk FOREIGN KEY ( mem_cod )
-        REFERENCES escoteiro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'presidente'::regclass AND (conname = 'presidente_escoteiro_fk')) THEN
+        ALTER TABLE presidente
+            ADD CONSTRAINT presidente_escoteiro_fk FOREIGN KEY ( mem_cod )
+                REFERENCES escoteiro ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE responsável
-    ADD CONSTRAINT responsável_membro_fk FOREIGN KEY ( mem_cod )
-        REFERENCES membro ( mem_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'responsável'::regclass AND (conname = 'responsável_membro_fk')) THEN
+        ALTER TABLE responsável
+            ADD CONSTRAINT responsável_membro_fk FOREIGN KEY ( mem_cod )
+                REFERENCES membro ( mem_cod );
+    END IF;
+END $$;
 
-ALTER TABLE contribuicao
-    ADD CONSTRAINT contribuicao_anjo_fk FOREIGN KEY ( anjo_esc_cod )
-        REFERENCES escoteiro ( esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contribuicao'::regclass AND (conname = 'contribuicao_anjo_fk')) THEN
+        ALTER TABLE contribuicao
+            ADD CONSTRAINT contribuicao_anjo_fk FOREIGN KEY ( anjo_esc_cod )
+                REFERENCES escoteiro ( esc_cod );
+    END IF;
+END $$;
 
-ALTER TABLE contribuicao
-    ADD CONSTRAINT contribuicao_adotado_fk FOREIGN KEY ( adotado_esc_cod )
-        REFERENCES escoteiro ( esc_cod );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'contribuicao'::regclass AND (conname = 'contribuicao_adotado_fk')) THEN
+        ALTER TABLE contribuicao
+            ADD CONSTRAINT contribuicao_adotado_fk FOREIGN KEY ( adotado_esc_cod )
+                REFERENCES escoteiro ( esc_cod );
+    END IF;
+END $$;
 
 
 -- ----------------------------------------------------------------------
@@ -445,7 +719,8 @@ ALTER TABLE contribuicao
 INSERT INTO tropa (tro_cod, tro_nome) VALUES
     (1, 'Alcateia'),
     (2, 'Tropa Escoteira'),
-    (3, 'Tropa Sênior');
+    (3, 'Tropa Sênior')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO patrulha (pat_cod, pat_nome, pat_lider_cod, pat_sublider_cod, tropa_tro_cod) VALUES
     (1, 'Seis Cinzento', 2021, 2017, 1),
@@ -456,20 +731,23 @@ INSERT INTO patrulha (pat_cod, pat_nome, pat_lider_cod, pat_sublider_cod, tropa_
     (6, 'Jaguar', 2023, NULL, 3),
     (7, 'Chefia Alcateia', 2004, NULL, 1),
     (8, 'Chefia Escoteira', 2005, NULL, 2),
-    (9, 'Chefia Sênior', 2006, NULL, 3);
+    (9, 'Chefia Sênior', 2006, NULL, 3)
+ON CONFLICT DO NOTHING;
 
-INSERT INTO categoria_mensalidade (cat_mens_cod, cat_mens_valor, cat_mens_qtd_irmao) VALUES
-    (1, 90.00, 0),
-    (2, 80.00, 1),
-    (3, 70.00, 2),
-    (4, 60.00, 3),
-    (5, 0.00, 0);
+INSERT INTO categoria_mensalidade (cat_mens_cod, cat_mens_valor, cat_mens_qtd_irmao, cat_mens_desc) VALUES
+    (1, 90.00, 0, 'Escoteiro sem irmãos no grupo'),
+    (2, 80.00, 1, 'Escoteiro com 1 irmão no grupo'),
+    (3, 70.00, 2, 'Escoteiro com 2 irmãos no grupo'),
+    (4, 60.00, 3, 'Escoteiro com 3 ou mais irmãos no grupo'),
+    (5, 0.00, 0, 'Isento (voluntários e diretoria)')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO tipo_pagamento (tp_cod, tp_desc) VALUES
     (1, 'Dinheiro'),
     (2, 'PIX'),
     (3, 'Cartão'),
-    (4, 'Apadrinhamento (Anjo)');
+    (4, 'Apadrinhamento (Anjo)')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO membro (mem_cod, mem_nome, mem_dt_nascto, mem_cpf, mem_rg, mem_cep, mem_end, mem_end_num, mem_end_bairro, mem_cidade, mem_estado, mem_tel, mem_email, mem_dt_ini, mem_dt_fim) VALUES
     (1, 'Sandra Regina Pacheco', '1968-04-12', '56871710370', '581750767', '19025080', 'Rua Antônio Marcondes', 140, 'Jardim Paulista', 'Presidente Prudente', 'SP', '18999900001', 'sandra.pacheco@example.com', '2015-03-07', '2025-06-30'),
@@ -516,7 +794,8 @@ INSERT INTO membro (mem_cod, mem_nome, mem_dt_nascto, mem_cpf, mem_rg, mem_cep, 
     (42, 'Paulo Sérgio Gomes', '1980-01-08', '49050096930', '839691808', '19061200', 'Alameda Santa Catarina', 24, 'Parque Residencial Cambuci', 'Presidente Prudente', 'SP', '18999900042', 'paulo.gomes@example.com', '2022-03-05', NULL),
     (43, 'Bruno Sérgio Gomes', '2012-04-10', '74912044490', '404325248', '19061200', 'Alameda Santa Catarina', 24, 'Parque Residencial Cambuci', 'Presidente Prudente', 'SP', '18999900043', 'bruno.gomes@example.com', '2022-03-05', '2026-08-31'),
     (44, 'Camila Torres Nunes', '1991-09-02', '23465702735', '574651745', '19013200', 'Rua Rosa Pereira', 560, 'Vila Marcondes', 'Presidente Prudente', 'SP', '18999900044', 'camila.nunes@example.com', '2026-03-07', NULL),
-    (45, 'Miguel Torres Nunes', '2017-01-26', '81482579650', '858848304', '19013200', 'Rua Rosa Pereira', 560, 'Vila Marcondes', 'Presidente Prudente', 'SP', NULL, NULL, '2026-03-07', NULL);
+    (45, 'Miguel Torres Nunes', '2017-01-26', '81482579650', '858848304', '19013200', 'Rua Rosa Pereira', 560, 'Vila Marcondes', 'Presidente Prudente', 'SP', NULL, NULL, '2026-03-07', NULL)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO escoteiro (mem_cod, esc_cod, categoria_mensalidade_cat_mens_cod, escoteiro_esc_cod, patrulha_pat_cod2, esc_sit_fin) VALUES
     (1, 2001, 5, 2001, 8, 0),
@@ -544,7 +823,8 @@ INSERT INTO escoteiro (mem_cod, esc_cod, categoria_mensalidade_cat_mens_cod, esc
     (39, 2023, 1, 2023, 6, 0),
     (41, 2024, 1, 2024, 4, 1),
     (43, 2025, 1, 2025, 3, 0),
-    (45, 2026, 1, 2026, 2, 0);
+    (45, 2026, 1, 2026, 2, 0)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO responsável (mem_cod, resp_cod) VALUES
     (9, 6001),
@@ -563,7 +843,8 @@ INSERT INTO responsável (mem_cod, resp_cod) VALUES
     (38, 6014),
     (40, 6015),
     (42, 6016),
-    (44, 6017);
+    (44, 6017)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO escoteiro_responsavel (responsável_mem_cod, escoteiro_mem_cod) VALUES
     (9, 11),
@@ -590,21 +871,25 @@ INSERT INTO escoteiro_responsavel (responsável_mem_cod, escoteiro_mem_cod) VALU
     (38, 39),
     (40, 41),
     (42, 43),
-    (44, 45);
+    (44, 45)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO chefe (mem_cod, chefe_cod, chefe_gestao_ini, chefe_gestao_fim, tropa_tro_cod) VALUES
     (5, 3001, '2020-02-01', '2022-12-31', 2),
     (6, 3002, '2024-02-03', NULL, 1),
     (7, 3003, '2023-02-04', NULL, 2),
-    (8, 3004, '2025-02-01', NULL, 3);
+    (8, 3004, '2025-02-01', NULL, 3)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO presidente (mem_cod, pres_cod, pres_gestao_ini, pres_gestao_fim) VALUES
     (1, 4001, '2022-01-01', '2024-12-31'),
-    (2, 4002, '2025-01-01', '2027-12-31');
+    (2, 4002, '2025-01-01', '2027-12-31')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO financeiro (mem_cod, fin_cod) VALUES
     (3, 5001),
-    (4, 5002);
+    (4, 5002)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO atividade_especial (atv_cod, atv_nome, atv_desc, atv_data, atv_valor) VALUES
     (1, 'Mensalidade (sem atividade)', 'Registro técnico: atividade usada em contas_receber de mensalidade (FK obrigatória no modelo).', '2026-01-01', NULL),
@@ -622,7 +907,8 @@ INSERT INTO atividade_especial (atv_cod, atv_nome, atv_desc, atv_data, atv_valor
     (13, 'Reunião Semanal 10/10', 'Reunião ordinária do Grupo na Casa do Escoteiro (sábado à tarde).', '2026-10-10', NULL),
     (14, 'Reunião Semanal 17/10', 'Reunião ordinária do Grupo na Casa do Escoteiro (sábado à tarde).', '2026-10-17', NULL),
     (15, 'Jamboree Regional 2026', 'Encontro regional de escoteiros. Inscrições abertas até 06/11.', '2026-11-14', 250.00),
-    (16, 'Ceia de Natal do Grupo', 'Confraternização de fim de ano do Grupo.', '2026-12-12', 35.00);
+    (16, 'Ceia de Natal do Grupo', 'Confraternização de fim de ano do Grupo.', '2026-12-12', 35.00)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, atividade_especial_atv_cod) VALUES
     (1, '2026-08-01', 'P', 2007, 2),
@@ -674,7 +960,8 @@ INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, ati
     (47, '2026-08-15', 'F', 2007, 4),
     (48, '2026-08-15', 'P', 2008, 4),
     (49, '2026-08-15', 'P', 2009, 4),
-    (50, '2026-08-15', 'P', 2010, 4);
+    (50, '2026-08-15', 'P', 2010, 4)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, atividade_especial_atv_cod) VALUES
     (51, '2026-08-15', 'P', 2011, 4),
@@ -726,7 +1013,8 @@ INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, ati
     (97, '2026-08-23', 'P', 2013, 6),
     (98, '2026-08-23', 'P', 2014, 6),
     (99, '2026-08-23', 'P', 2017, 6),
-    (100, '2026-08-23', 'P', 2018, 6);
+    (100, '2026-08-23', 'P', 2018, 6)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, atividade_especial_atv_cod) VALUES
     (101, '2026-08-23', 'P', 2020, 6),
@@ -778,7 +1066,8 @@ INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, ati
     (147, '2026-09-05', 'P', 2021, 8),
     (148, '2026-09-05', 'P', 2022, 8),
     (149, '2026-09-05', 'P', 2023, 8),
-    (150, '2026-09-05', 'P', 2024, 8);
+    (150, '2026-09-05', 'P', 2024, 8)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, atividade_especial_atv_cod) VALUES
     (151, '2026-09-05', 'P', 2026, 8),
@@ -830,7 +1119,8 @@ INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, ati
     (197, '2026-09-26', 'J', 2015, 11),
     (198, '2026-09-26', 'F', 2016, 11),
     (199, '2026-09-26', 'P', 2017, 11),
-    (200, '2026-09-26', 'P', 2018, 11);
+    (200, '2026-09-26', 'P', 2018, 11)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, atividade_especial_atv_cod) VALUES
     (201, '2026-09-26', 'J', 2019, 11),
@@ -882,7 +1172,8 @@ INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, ati
     (247, '2026-10-10', 'P', 2021, 13),
     (248, '2026-10-10', 'F', 2022, 13),
     (249, '2026-10-10', 'P', 2023, 13),
-    (250, '2026-10-10', 'P', 2024, 13);
+    (250, '2026-10-10', 'P', 2024, 13)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, atividade_especial_atv_cod) VALUES
     (251, '2026-10-10', 'P', 2026, 13),
@@ -910,7 +1201,8 @@ INSERT INTO frequencia (freq_cod, freq_data, freq_status, escoteiro_esc_cod, ati
     (273, '2026-10-17', 'P', 2026, 14),
     (274, '2026-10-17', 'P', 2004, 14),
     (275, '2026-10-17', 'P', 2005, 14),
-    (276, '2026-10-17', 'P', 2006, 14);
+    (276, '2026-10-17', 'P', 2006, 14)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valor, escoteiro_esc_cod, categoria_mensalidade_cat_mens_cod) VALUES
     (1, 1, 2026, '2026-01-01', 80.00, 2007, 2),
@@ -962,7 +1254,8 @@ INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valo
     (47, 3, 2026, '2026-03-01', 80.00, 2018, 2),
     (48, 3, 2026, '2026-03-01', 90.00, 2019, 1),
     (49, 3, 2026, '2026-03-01', 90.00, 2020, 1),
-    (50, 3, 2026, '2026-03-01', 80.00, 2021, 2);
+    (50, 3, 2026, '2026-03-01', 80.00, 2021, 2)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valor, escoteiro_esc_cod, categoria_mensalidade_cat_mens_cod) VALUES
     (51, 3, 2026, '2026-03-01', 80.00, 2022, 2),
@@ -1014,7 +1307,8 @@ INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valo
     (97, 6, 2026, '2026-06-01', 70.00, 2009, 3),
     (98, 6, 2026, '2026-06-01', 70.00, 2010, 3),
     (99, 6, 2026, '2026-06-01', 70.00, 2011, 3),
-    (100, 6, 2026, '2026-06-01', 90.00, 2012, 1);
+    (100, 6, 2026, '2026-06-01', 90.00, 2012, 1)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valor, escoteiro_esc_cod, categoria_mensalidade_cat_mens_cod) VALUES
     (101, 6, 2026, '2026-06-01', 80.00, 2013, 2),
@@ -1066,7 +1360,8 @@ INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valo
     (147, 8, 2026, '2026-08-01', 90.00, 2019, 1),
     (148, 8, 2026, '2026-08-01', 90.00, 2020, 1),
     (149, 8, 2026, '2026-08-01', 80.00, 2021, 2),
-    (150, 8, 2026, '2026-08-01', 80.00, 2022, 2);
+    (150, 8, 2026, '2026-08-01', 80.00, 2022, 2)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valor, escoteiro_esc_cod, categoria_mensalidade_cat_mens_cod) VALUES
     (151, 8, 2026, '2026-08-01', 90.00, 2023, 1),
@@ -1110,7 +1405,8 @@ INSERT INTO mensalidade (mens_cod, mens_mes, mens_ano, mens_dt_lancto, mens_valo
     (189, 10, 2026, '2026-10-01', 80.00, 2022, 2),
     (190, 10, 2026, '2026-10-01', 90.00, 2023, 1),
     (191, 10, 2026, '2026-10-01', 90.00, 2024, 1),
-    (192, 10, 2026, '2026-10-01', 90.00, 2026, 1);
+    (192, 10, 2026, '2026-10-01', 90.00, 2026, 1)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_cod, mensalidade_mens_cod) VALUES
     (1, 80.00, 'Mensalidade 01/2026', 1, 1),
@@ -1162,7 +1458,8 @@ INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_co
     (47, 80.00, 'Mensalidade 03/2026', 1, 47),
     (48, 90.00, 'Mensalidade 03/2026', 1, 48),
     (49, 90.00, 'Mensalidade 03/2026', 1, 49),
-    (50, 80.00, 'Mensalidade 03/2026', 1, 50);
+    (50, 80.00, 'Mensalidade 03/2026', 1, 50)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_cod, mensalidade_mens_cod) VALUES
     (51, 80.00, 'Mensalidade 03/2026', 1, 51),
@@ -1214,7 +1511,8 @@ INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_co
     (97, 70.00, 'Mensalidade 06/2026', 1, 97),
     (98, 70.00, 'Mensalidade 06/2026', 1, 98),
     (99, 70.00, 'Mensalidade 06/2026', 1, 99),
-    (100, 90.00, 'Mensalidade 06/2026', 1, 100);
+    (100, 90.00, 'Mensalidade 06/2026', 1, 100)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_cod, mensalidade_mens_cod) VALUES
     (101, 80.00, 'Mensalidade 06/2026', 1, 101),
@@ -1266,7 +1564,8 @@ INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_co
     (147, 90.00, 'Mensalidade 08/2026', 1, 147),
     (148, 90.00, 'Mensalidade 08/2026', 1, 148),
     (149, 80.00, 'Mensalidade 08/2026', 1, 149),
-    (150, 80.00, 'Mensalidade 08/2026', 1, 150);
+    (150, 80.00, 'Mensalidade 08/2026', 1, 150)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_cod, mensalidade_mens_cod) VALUES
     (151, 90.00, 'Mensalidade 08/2026', 1, 151),
@@ -1318,7 +1617,8 @@ INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_co
     (197, 45.00, 'Passeio Zoológico', 6, 141),
     (198, 45.00, 'Passeio Zoológico', 6, 142),
     (199, 45.00, 'Passeio Zoológico', 6, 145),
-    (200, 45.00, 'Passeio Zoológico', 6, 146);
+    (200, 45.00, 'Passeio Zoológico', 6, 146)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_cod, mensalidade_mens_cod) VALUES
     (201, 45.00, 'Passeio Zoológico', 6, 148),
@@ -1346,7 +1646,8 @@ INSERT INTO contas_receber (cr_cod, cr_valor, cr_desc, atividade_especial_atv_co
     (223, 35.00, 'Ceia de Natal', 16, 181),
     (224, 35.00, 'Ceia de Natal', 16, 189),
     (225, 35.00, 'Ceia de Natal', 16, 190),
-    (226, 35.00, 'Ceia de Natal', 16, 192);
+    (226, 35.00, 'Ceia de Natal', 16, 192)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagamento_tp_cod, contas_receber_cr_cod, pg_valor_pago) VALUES
     (1, '2026-01-05', '2026-01-10', 'Mensalidade 01/2026', 1, 1, 80.00),
@@ -1398,7 +1699,8 @@ INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagament
     (47, '2026-03-04', '2026-03-10', 'Mensalidade 03/2026', 2, 47, 80.00),
     (48, '2026-03-08', '2026-03-10', 'Mensalidade 03/2026', 2, 48, 90.00),
     (49, '2026-03-07', '2026-03-10', 'Mensalidade 03/2026', 2, 49, 90.00),
-    (50, '2026-03-14', '2026-03-10', 'Mensalidade 03/2026', 1, 50, 80.00);
+    (50, '2026-03-14', '2026-03-10', 'Mensalidade 03/2026', 1, 50, 80.00)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagamento_tp_cod, contas_receber_cr_cod, pg_valor_pago) VALUES
     (51, '2026-03-13', '2026-03-10', 'Mensalidade 03/2026', 3, 51, 80.00),
@@ -1450,7 +1752,8 @@ INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagament
     (97, '2026-06-11', '2026-06-10', 'Mensalidade 06/2026', 3, 97, 70.00),
     (98, '2026-06-06', '2026-06-10', 'Mensalidade 06/2026', 1, 98, 70.00),
     (99, '2026-06-04', '2026-06-10', 'Mensalidade 06/2026', 2, 99, 70.00),
-    (100, '2026-06-11', '2026-06-10', 'Mensalidade 06/2026', 2, 100, 90.00);
+    (100, '2026-06-11', '2026-06-10', 'Mensalidade 06/2026', 2, 100, 90.00)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagamento_tp_cod, contas_receber_cr_cod, pg_valor_pago) VALUES
     (101, '2026-06-08', '2026-06-10', 'Mensalidade 06/2026', 2, 101, 80.00),
@@ -1502,7 +1805,8 @@ INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagament
     (147, NULL, '2026-08-10', 'Mensalidade 08/2026', 3, 147, 0.00),
     (148, '2026-08-11', '2026-08-10', 'Mensalidade 08/2026', 2, 148, 90.00),
     (149, '2026-08-14', '2026-08-10', 'Mensalidade 08/2026', 2, 149, 80.00),
-    (150, '2026-08-02', '2026-08-10', 'Mensalidade 08/2026', 1, 150, 80.00);
+    (150, '2026-08-02', '2026-08-10', 'Mensalidade 08/2026', 1, 150, 80.00)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagamento_tp_cod, contas_receber_cr_cod, pg_valor_pago) VALUES
     (151, '2026-08-06', '2026-08-10', 'Mensalidade 08/2026', 3, 151, 90.00),
@@ -1554,7 +1858,8 @@ INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagament
     (197, '2026-08-10', '2026-08-16', 'Pgto Passeio Zoológico', 1, 197, 45.00),
     (198, '2026-08-06', '2026-08-16', 'Pgto Passeio Zoológico', 2, 198, 45.00),
     (199, '2026-08-13', '2026-08-16', 'Pgto Passeio Zoológico', 2, 199, 45.00),
-    (200, '2026-08-11', '2026-08-16', 'Pgto Passeio Zoológico', 2, 200, 45.00);
+    (200, '2026-08-11', '2026-08-16', 'Pgto Passeio Zoológico', 2, 200, 45.00)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagamento_tp_cod, contas_receber_cr_cod, pg_valor_pago) VALUES
     (201, '2026-08-13', '2026-08-16', 'Pgto Passeio Zoológico', 1, 201, 45.00),
@@ -1582,13 +1887,15 @@ INSERT INTO pagamento (pg_cod, pg_dt_pagto, pg_dt_vencto, pg_desc, tipo_pagament
     (223, NULL, '2026-12-04', 'Pgto Ceia de Natal', 3, 223, 0.00),
     (224, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 224, 0.00),
     (225, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 225, 0.00),
-    (226, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 226, 0.00);
+    (226, NULL, '2026-12-04', 'Pgto Ceia de Natal', 2, 226, 0.00)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contribuicao (con_cod, con_dt, con_dt_fim, anjo_esc_cod, adotado_esc_cod)
     SELECT ROW_NUMBER() OVER (ORDER BY e.esc_cod), COALESCE(m.mem_dt_ini, CURRENT_DATE), NULL, e.escoteiro_esc_cod, e.esc_cod
     FROM escoteiro e
     JOIN membro m ON m.mem_cod = e.mem_cod
-    WHERE e.escoteiro_esc_cod <> e.esc_cod;
+    WHERE e.escoteiro_esc_cod <> e.esc_cod
+ON CONFLICT DO NOTHING;
 
 INSERT INTO conta (cta_cod, mem_cod, cta_senha, cta_situacao, cta_admin, cta_dt_criacao)
 SELECT ROW_NUMBER() OVER (ORDER BY m.mem_cod), m.mem_cod, '$2a$10$9rJI4uBTK4ktV.akLO7D9eOeakQ399H6md9coVYj9AsDom/mKNxTK', 'A', FALSE, CURRENT_DATE
@@ -1603,10 +1910,12 @@ WHERE m.mem_dt_fim IS NULL
      OR EXISTS (SELECT 1 FROM financeiro x WHERE x.mem_cod = m.mem_cod)
      OR EXISTS (SELECT 1 FROM "responsável" x WHERE x.mem_cod = m.mem_cod)
      OR EXISTS (SELECT 1 FROM escoteiro x WHERE x.mem_cod = m.mem_cod)
-  );
+  )
+ON CONFLICT DO NOTHING;
 
 UPDATE conta SET cta_admin = TRUE
-WHERE mem_cod IN (SELECT x.mem_cod FROM presidente x
+WHERE NOT EXISTS (SELECT 1 FROM conta a WHERE a.cta_admin)   -- só quando ainda não há administrador
+  AND mem_cod IN (SELECT x.mem_cod FROM presidente x
                   WHERE x.pres_gestao_ini <= CURRENT_DATE AND x.pres_gestao_fim >= CURRENT_DATE);
 
 COMMIT;
@@ -1620,7 +1929,7 @@ BEGIN;
 -- Parametrização: nome, logo e informações do sistema/grupo, alteráveis pela tela de Administração.
 -- Linha única (par_cod sempre 1). par_logo guarda a imagem como data URL (data:image/png;base64,...);
 -- NULL = o front usa o logo padrão que vem no projeto.
-CREATE TABLE parametrizacao (
+CREATE TABLE IF NOT EXISTS parametrizacao (
     par_cod           int4 NOT NULL,
     par_sigla         VARCHAR(20) NOT NULL,
     par_nome_sistema  VARCHAR(80) NOT NULL,
@@ -1633,14 +1942,25 @@ CREATE TABLE parametrizacao (
     par_email         VARCHAR(60),
     par_logo          TEXT
 );
-ALTER TABLE parametrizacao ADD CONSTRAINT parametrizacao_pk PRIMARY KEY ( par_cod );
-ALTER TABLE parametrizacao ADD CONSTRAINT parametrizacao_linha_unica_ck CHECK ( par_cod = 1 );
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'parametrizacao'::regclass AND (conname = 'parametrizacao_pk' OR contype = 'p')) THEN
+        ALTER TABLE parametrizacao ADD CONSTRAINT parametrizacao_pk PRIMARY KEY ( par_cod );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'parametrizacao'::regclass AND (conname = 'parametrizacao_linha_unica_ck')) THEN
+        ALTER TABLE parametrizacao ADD CONSTRAINT parametrizacao_linha_unica_ck CHECK ( par_cod = 1 );
+    END IF;
+END $$;
 
 INSERT INTO parametrizacao (par_cod, par_sigla, par_nome_sistema, par_slogan, par_nome_grupo, par_endereco,
                             par_cidade, par_estado, par_telefone, par_email, par_logo) VALUES
     (1, 'SIGG', 'Sistema Integrado de Gestão Guayporé', 'Sempre Alerta', 'Grupo de Escoteiros Guayporé 186º/SP',
      'Cidade da Criança - Casa do Escoteiro, Rodovia Raposo Tavares, S/N, Km 561,5', 'Presidente Prudente', 'SP',
-     '1839162262', 'contato@grupoescoteiroguaypore.com.br', NULL);
+     '1839162262', 'contato@grupoescoteiroguaypore.com.br', NULL)
+ON CONFLICT DO NOTHING;
 
 COMMIT;
 
@@ -1653,12 +1973,22 @@ BEGIN;
 
 -- RF_F5 Ofertar Novas Atividades Pagas: campos que o caso de uso pede e o modelo não tinha.
 -- Atividade paga = atv_valor preenchido. As já cadastradas ficam com local/vagas/prazo NULL.
-ALTER TABLE atividade_especial ADD COLUMN atv_local VARCHAR(100);
-ALTER TABLE atividade_especial ADD COLUMN atv_vagas int4;
-ALTER TABLE atividade_especial ADD COLUMN atv_prazo_interesse DATE;
-ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_vagas_ck CHECK ( atv_vagas IS NULL OR atv_vagas > 0 );
-ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_prazo_ck
-    CHECK ( atv_prazo_interesse IS NULL OR atv_prazo_interesse <= atv_data );
+ALTER TABLE atividade_especial ADD COLUMN IF NOT EXISTS atv_local VARCHAR(100);
+ALTER TABLE atividade_especial ADD COLUMN IF NOT EXISTS atv_vagas int4;
+ALTER TABLE atividade_especial ADD COLUMN IF NOT EXISTS atv_prazo_interesse DATE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'atividade_especial'::regclass AND (conname = 'atividade_especial_vagas_ck')) THEN
+        ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_vagas_ck CHECK ( atv_vagas IS NULL OR atv_vagas > 0 );
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'atividade_especial'::regclass AND (conname = 'atividade_especial_prazo_ck')) THEN
+        ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_prazo_ck
+            CHECK ( atv_prazo_interesse IS NULL OR atv_prazo_interesse <= atv_data );
+    END IF;
+END $$;
 
 COMMIT;
 
@@ -1692,15 +2022,15 @@ COMMIT;
 -- ============================================================================
 BEGIN;
 
-ALTER TABLE categoria_mensalidade ADD COLUMN cat_mens_desc VARCHAR(100);
-
 UPDATE categoria_mensalidade SET cat_mens_desc = CASE cat_mens_cod
     WHEN 1 THEN 'Escoteiro sem irmãos no grupo'
     WHEN 2 THEN 'Escoteiro com 1 irmão no grupo'
     WHEN 3 THEN 'Escoteiro com 2 irmãos no grupo'
     WHEN 4 THEN 'Escoteiro com 3 ou mais irmãos no grupo'
     WHEN 5 THEN 'Isento (voluntários e diretoria)'
-END;
+    ELSE 'Categoria ' || cat_mens_cod
+END
+WHERE cat_mens_desc IS NULL;
 
 ALTER TABLE categoria_mensalidade ALTER COLUMN cat_mens_desc SET NOT NULL;
 

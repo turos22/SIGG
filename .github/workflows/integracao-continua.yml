@@ -74,7 +74,12 @@ jobs:
           java-version: '25'
           cache: maven
       - name: Carregar o dump de desenvolvimento
-        # O v1 já tem tudo (schema, contas e dados fictícios) e só acrescenta: o banco do CI nasce vazio a cada execução
+        # O v1 já tem tudo (schema, contas e dados fictícios): o banco do CI nasce vazio a cada execução
+        run: psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_v1.sql
+        env:
+          PGPASSWORD: postgres123
+      - name: Recarregar o dump (o script precisa ser reexecutável)
+        # Colar o v1 de novo num banco que já o tem não pode dar erro nem alterar nada
         run: psql -h localhost -U postgres -d Escoteiros -v ON_ERROR_STOP=1 -q -f ../artefatos/Script_sql_v1.sql
         env:
           PGPASSWORD: postgres123
