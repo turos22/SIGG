@@ -1661,3 +1661,47 @@ ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_prazo_ck
     CHECK ( atv_prazo_interesse IS NULL OR atv_prazo_interesse <= atv_data );
 
 COMMIT;
+
+-- ============================================================================
+-- TIPO_ATIVIDADE (Matheus): tabela de domínio dos tipos de atividade e o vínculo com
+-- atividade_especial. As atividades já cadastradas ficam com tipo_atividade_ta_cod NULL.
+-- ============================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS tipo_atividade (
+    ta_cod INTEGER PRIMARY KEY,
+    ta_desc VARCHAR(100) NOT NULL
+);
+
+ALTER TABLE atividade_especial
+    ADD COLUMN IF NOT EXISTS tipo_atividade_ta_cod INTEGER REFERENCES tipo_atividade(ta_cod);
+
+INSERT INTO tipo_atividade (ta_cod, ta_desc) VALUES
+    (1, 'Acampamento'),
+    (2, 'Excursão / Passeio'),
+    (3, 'Jamboree / Evento Regional')
+ON CONFLICT (ta_cod) DO NOTHING;
+
+COMMIT;
+
+-- ============================================================================
+-- CATEGORIA_MENSALIDADE: descrição. O CategoriaMensalidadeDAO lê e grava cat_mens_desc,
+-- coluna que o modelo original não tinha. As 5 categorias do dump recebem um texto
+-- coerente com os valores e com o comentário do cabeçalho (qtd_irmao = irmãos no grupo,
+-- 3 = "3 ou mais"; categoria 5 = isento).
+-- ============================================================================
+BEGIN;
+
+ALTER TABLE categoria_mensalidade ADD COLUMN cat_mens_desc VARCHAR(100);
+
+UPDATE categoria_mensalidade SET cat_mens_desc = CASE cat_mens_cod
+    WHEN 1 THEN 'Escoteiro sem irmãos no grupo'
+    WHEN 2 THEN 'Escoteiro com 1 irmão no grupo'
+    WHEN 3 THEN 'Escoteiro com 2 irmãos no grupo'
+    WHEN 4 THEN 'Escoteiro com 3 ou mais irmãos no grupo'
+    WHEN 5 THEN 'Isento (voluntários e diretoria)'
+END;
+
+ALTER TABLE categoria_mensalidade ALTER COLUMN cat_mens_desc SET NOT NULL;
+
+COMMIT;

@@ -1,5 +1,5 @@
+// Espelha models/TipoAtividade.java (tabela tipo_atividade). O valor cobrado fica na atividade, não no tipo.
 export default interface TipoAtividade {
-    atv_cod: number;
-    atv_nome: string;
-    atv_valor: number;
+    ta_cod: number;
+    ta_desc: string;
 }

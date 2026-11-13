@@ -36,6 +36,9 @@ public class CategoriaMensalidadeController {
         if (categoria.getDescricao() == null || categoria.getDescricao().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("erro", "A descrição da categoria é obrigatória."));
         }
+        if (categoria.getDescricao().trim().length() > 100) { // cat_mens_desc é VARCHAR(100)
+            return ResponseEntity.badRequest().body(Map.of("erro", "A descrição deve ter até 100 caracteres."));
+        }
         if (categoria.getValor() == null || categoria.getValor().doubleValue() < 0) {
             return ResponseEntity.badRequest().body(Map.of("erro", "O valor informado é inválido."));
         }
@@ -57,6 +60,9 @@ public class CategoriaMensalidadeController {
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody CategoriaMensalidade categoria) {
         if (categoria.getDescricao() == null || categoria.getDescricao().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("erro", "A descrição não pode ficar vazia."));
+        }
+        if (categoria.getDescricao().trim().length() > 100) { // cat_mens_desc é VARCHAR(100)
+            return ResponseEntity.badRequest().body(Map.of("erro", "A descrição deve ter até 100 caracteres."));
         }
         if (categoria.getValor() == null || categoria.getValor().doubleValue() < 0) {
             return ResponseEntity.badRequest().body(Map.of("erro", "O valor informado é inválido."));

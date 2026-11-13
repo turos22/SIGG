@@ -5,18 +5,13 @@ import java.util.List;
 import com.example.sigg_backend.db.dao.TipoAtividadeDAO;
 import com.example.sigg_backend.db.util.Conexao;
 
+// Tipo de atividade (tabela tipo_atividade: ta_cod, ta_desc). O valor cobrado fica em atividade_especial.
 public class TipoAtividade {
-    private Integer atv_cod;
-    private String atv_nome;
-    private BigDecimal atv_valor;
+    private int ta_cod;
+    private String ta_desc;
 
+    // Só o construtor vazio + setters: assim o JSON do cliente pode omitir ta_cod (o DAO gera o código)
     public TipoAtividade() {
-    }
-
-    public TipoAtividade(int atv_cod, String atv_nome, BigDecimal atv_valor) {
-        this.atv_cod = atv_cod;
-        this.atv_nome = atv_nome;
-        this.atv_valor = atv_valor;
     }
 
     // Métodos de negócio / persistência (Model chama o DAO)
@@ -45,27 +40,19 @@ public class TipoAtividade {
     }
 
     // Getters e Setters
-    public int getAtv_cod() {
-        return atv_cod;
+    public int getTa_cod() {
+        return ta_cod;
     }
 
-    public void setAtv_cod(int atv_cod) {
-        this.atv_cod = atv_cod;
+    public void setTa_cod(int ta_cod) {
+        this.ta_cod = ta_cod;
     }
 
-    public String getAtv_nome() {
-        return atv_nome;
+    public String getTa_desc() {
+        return ta_desc;
     }
 
-    public void setAtv_nome(String atv_nome) {
-        this.atv_nome = atv_nome;
-    }
-
-    public BigDecimal getAtv_valor() {
-        return atv_valor;
-    }
-
-    public void setAtv_valor(BigDecimal atv_valor) {
-        this.atv_valor = atv_valor;
+    public void setTa_desc(String ta_desc) {
+        this.ta_desc = ta_desc;
     }
 }
