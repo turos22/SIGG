@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.models.Chamada;
+import com.example.sigg_backend.models.Chefe;
 import com.example.sigg_backend.models.ItemChamada;
 import com.example.sigg_backend.models.ResumoChamada;
 import com.example.sigg_backend.models.Tropa;
@@ -18,6 +19,7 @@ import com.example.sigg_backend.models.UsuarioLogado;
 public class FrequenciaFacade {
 
     private static final List<String> OPERADORES = List.of(UsuarioLogado.ADMIN, UsuarioLogado.PRESIDENTE, UsuarioLogado.CHEFE);
+    private static final List<String> SEM_RESTRICAO = List.of(UsuarioLogado.ADMIN, UsuarioLogado.PRESIDENTE);
     private static final String SEM_REGISTRO = "Não há frequência dessa tropa nessa data";
 
     private final AutorizacaoFacade autorizacao;
@@ -28,11 +30,25 @@ public class FrequenciaFacade {
 
     public List<ResumoChamada> listar(Conexao conexao, Integer troCod, Integer ano) {
         autorizacao.exigirPerfil(conexao, OPERADORES);
-        return new ResumoChamada().listar(conexao, troCod, anoOuAtual(ano));
+        Integer tropa = troCod;
+        Integer propria = tropaDoChefe(conexao);
+        if (propria != null) // chefe só enxerga a própria tropa: sem filtro, usa a dele
+            tropa = tropa == null ? propria : exigirTropa(conexao, tropa);
+        return new ResumoChamada().listar(conexao, tropa, anoOuAtual(ano));
+    }
+
+    // Tropa do chefe logado (404 se não é chefe com gestão em andamento): o front trava o combo nela
+    public Tropa minhaTropa(Conexao conexao) {
+        UsuarioLogado usuario = autorizacao.exigirAutenticado(conexao);
+        Integer cod = new Chefe().tropaAtiva(conexao, usuario.getMem_cod());
+        if (cod == null)
+            throw new NaoEncontradoException("Você não é chefe de nenhuma tropa");
+        return tropaExistente(conexao, cod);
     }
 
     public Chamada consultar(Conexao conexao, int troCod, LocalDate data) {
         autorizacao.exigirPerfil(conexao, OPERADORES);
+        exigirTropa(conexao, troCod);
         Chamada chamada = new Chamada();
         chamada.setTropa(tropaExistente(conexao, troCod));
         chamada.setData(data);
@@ -41,6 +57,7 @@ public class FrequenciaFacade {
 
     public List<ItemChamada> percentuais(Conexao conexao, int troCod, Integer ano) {
         autorizacao.exigirPerfil(conexao, OPERADORES);
+        exigirTropa(conexao, troCod);
         Chamada chamada = new Chamada();
         chamada.setTropa(tropaExistente(conexao, troCod));
         return chamada.percentuais(conexao, anoOuAtual(ano));
@@ -67,6 +84,7 @@ public class FrequenciaFacade {
     @Transactional
     public Map<String, String> excluir(Conexao conexao, int troCod, LocalDate data) {
         autorizacao.exigirPerfil(conexao, OPERADORES);
+        exigirTropa(conexao, troCod);
         Chamada chamada = new Chamada();
         chamada.setTropa(tropaExistente(conexao, troCod));
         chamada.setData(data);
@@ -89,10 +107,33 @@ public class FrequenciaFacade {
         String problema = chamada.validar();
         if (problema != null)
             throw new RegraNegocioException(problema);
+        exigirTropa(conexao, chamada.getTropa().getCod());
         chamada.setTropa(tropaExistente(conexao, chamada.getTropa().getCod()));
         Integer intruso = chamada.primeiroEscoteiroDeOutraTropa(conexao);
         if (intruso != null)
             throw new RegraNegocioException("Escoteiro " + intruso + " não pertence a essa tropa");
+    }
+
+    // Chefe (que não é presidente nem admin) só opera a tropa da gestão em andamento, lida do banco a cada chamada:
+    // o perfil da sessão só é calculado no login e não sabe que a gestão acabou
+    private int exigirTropa(Conexao conexao, int troCod) {
+        Integer propria = tropaDoChefe(conexao);
+        if (propria != null && propria != troCod)
+            throw new AcessoNegadoException("Você só pode registrar a frequência da sua tropa");
+        return troCod;
+    }
+
+    // null = sem restrição de tropa (segurança desligada, admin, presidente) ou usuário que nem é chefe ativo
+    private Integer tropaDoChefe(Conexao conexao) {
+        if (!autorizacao.segurancaAtiva())
+            return null;
+        UsuarioLogado usuario = autorizacao.usuarioAtual();
+        if (usuario.temAlgumPerfil(SEM_RESTRICAO))
+            return null;
+        Integer propria = new Chefe().tropaAtiva(conexao, usuario.getMem_cod());
+        if (propria == null)
+            throw new AcessoNegadoException("Você não é chefe de nenhuma tropa");
+        return propria;
     }
 
     private Tropa tropaExistente(Conexao conexao, int troCod) {

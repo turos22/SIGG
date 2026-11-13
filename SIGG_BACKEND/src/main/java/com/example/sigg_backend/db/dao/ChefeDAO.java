@@ -66,6 +66,17 @@ public class ChefeDAO implements IDAO<Chefe> {
         return conexao.manipular("UPDATE chefe SET chefe_gestao_fim = ? WHERE mem_cod = ?", fim, memCod);
     }
 
+    // Tropa da gestão em andamento (mesmo critério do login: sem fim ou fim >= hoje); null se não há
+    public Integer tropaAtiva(Conexao conexao, int memCod){
+        ResultSet rs = conexao.consultar("SELECT tropa_tro_cod FROM chefe WHERE mem_cod = ?"
+                + " AND (chefe_gestao_fim IS NULL OR chefe_gestao_fim >= CURRENT_DATE)", memCod);
+        try {
+            return rs != null && rs.next() ? rs.getInt("tropa_tro_cod") : null;
+        } catch (SQLException sqlex) {
+            return null;
+        }
+    }
+
     public boolean existe(Conexao conexao, int memCod){
         ResultSet rs = conexao.consultar("SELECT 1 FROM chefe WHERE mem_cod = ?", memCod);
         try {

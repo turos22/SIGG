@@ -46,6 +46,10 @@ public class Chefe extends Escoteiro {
         return gestao_fim == null || !gestao_fim.isBefore(LocalDate.now());
     }
 
+    public Integer tropaAtiva(Conexao conexao, int memCod) {
+        return new ChefeDAO().tropaAtiva(conexao, memCod);
+    }
+
     public boolean reativar(Conexao conexao) {
         return new ChefeDAO().reativar(conexao, this);
     }

@@ -38,6 +38,11 @@ public class FrequenciaController {
         return ResponseEntity.ok(facade.listar(conexao, tropa, ano));
     }
 
+    @GetMapping("/minha-tropa")
+    public ResponseEntity<Object> minhaTropa(){
+        return ResponseEntity.ok(facade.minhaTropa(conexao));
+    }
+
     @GetMapping("/chamada")
     public ResponseEntity<Object> consultar(@RequestParam int tropa,
                                             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data){
