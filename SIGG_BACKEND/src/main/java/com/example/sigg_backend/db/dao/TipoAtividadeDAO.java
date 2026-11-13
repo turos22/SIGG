@@ -15,7 +15,7 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
     public boolean existeNome(Conexao conexao, String nome, int excetoCod) {
         ResultSet rs = conexao.consultar(
                 "SELECT COUNT(*) AS total FROM tipo_atividade WHERE LOWER(ta_desc) = LOWER(?) AND ta_cod <> ?",
-                descricao.trim(), excetoCod
+                nome.trim(), excetoCod
         );
         try {
             if (rs != null && rs.next()) {

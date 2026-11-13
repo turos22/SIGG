@@ -41,7 +41,7 @@ public class TipoAtividadeController {
         }
 
         // Validação: Não deixar repetir o nome (Exigência da professora)
-        if (TipoAtividade.existeNome(conexao, tipo.getAtv_nome(), 0)) {
+        if (TipoAtividade.existeNome(conexao, tipo.getTa_desc(), 0)) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Já existe um tipo de atividade cadastrado com este nome."));
         }
 
