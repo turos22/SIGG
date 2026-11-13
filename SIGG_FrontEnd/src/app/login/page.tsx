@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
-import logoEscoteiros from '@/assets/logo_escoteiros.png'
 import ConfirmacaoDeConta from '@/components/autenticacao/ConfirmacaoDeConta'
 import FormCriarConta from '@/components/autenticacao/FormCriarConta'
 import FormEntrar from '@/components/autenticacao/FormEntrar'
 import FormRecuperarSenha from '@/components/autenticacao/FormRecuperarSenha'
 import FormRedefinirSenha from '@/components/autenticacao/FormRedefinirSenha'
+import { useParametrizacao } from '@/data/contexts/ParametrizacaoContexto'
 import { useSessao } from '@/data/contexts/SessaoContexto'
 import { AUTENTICACAO_ATIVA } from '@/data/services/sessao'
 import './page.css'
@@ -26,6 +26,7 @@ export default function PaginaLogin() {
   const tokenDeConfirmacao = parametros.get('confirmar')
   const [modo, setModo] = useState<Modo>(tokenDeRedefinicao ? 'redefinir' : tokenDeConfirmacao ? 'confirmar' : 'entrar')
   const { usuario } = useSessao()
+  const { parametrizacao, logo } = useParametrizacao()
   const navegar = useNavigate()
   const local = useLocation()
   const destino = (local.state as { de?: string } | null)?.de ?? '/'
@@ -37,10 +38,13 @@ export default function PaginaLogin() {
       <div className="login-cartao">
         <header className="login-marca">
           <div className="login-logo">
-            <img src={logoEscoteiros} alt="Escoteiros do Brasil" />
+            <img src={logo} alt={`Logo ${parametrizacao.nomeGrupo}`} />
           </div>
-          <h1>SIGG</h1>
-          <p>Sistema Integrado de Gestão Guayporé · Sempre Alerta</p>
+          <h1>{parametrizacao.sigla}</h1>
+          <p>
+            {parametrizacao.nomeSistema}
+            {parametrizacao.slogan && ` · ${parametrizacao.slogan}`}
+          </p>
         </header>
 
         <section className="cartao" style={{ display: 'grid', gap: 16 }}>

@@ -1,4 +1,5 @@
 import TextField from '@mui/material/TextField'
+import { adornoDeErro } from './adornoDeErro'
 import type { CampoBaseProps } from './tipos'
 
 interface CampoDataProps extends CampoBaseProps {
@@ -23,7 +24,7 @@ export default function CampoData({
       error={!!erro}
       helperText={erro ?? ajuda}
       onChange={(evento) => aoMudar(evento.target.value)}
-      slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: minimo, max: maximo } }}
+      slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: minimo, max: maximo }, input: { endAdornment: adornoDeErro(erro) } }}
     />
   )
 }

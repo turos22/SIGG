@@ -43,6 +43,7 @@ public class ConfiguracaoSeguranca {
                 .authorizeHttpRequests(acesso -> acesso
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLICAS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/parametrizacao").permitAll()
                         .requestMatchers("/auth/**", "/mensalidades/**").authenticated()
                         .requestMatchers("/contas/**").hasRole("ADMIN")
                         .anyRequest().hasAnyRole("ADMIN", "PRESIDENTE", "CHEFE", "FINANCEIRO"))

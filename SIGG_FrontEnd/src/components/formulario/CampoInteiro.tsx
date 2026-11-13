@@ -1,4 +1,5 @@
 import TextField from '@mui/material/TextField'
+import { adornoDeErro } from './adornoDeErro'
 import type { CampoBaseProps } from './tipos'
 
 interface CampoInteiroProps extends CampoBaseProps {
@@ -31,7 +32,7 @@ export default function CampoInteiro({
         if (!/^\d*$/.test(texto)) return
         aoMudar(texto === '' ? null : Number(texto))
       }}
-      slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' } }}
+      slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' }, input: { endAdornment: adornoDeErro(erro ?? mensagemLimite) } }}
     />
   )
 }

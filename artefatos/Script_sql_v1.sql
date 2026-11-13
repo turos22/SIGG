@@ -1610,3 +1610,54 @@ WHERE mem_cod IN (SELECT x.mem_cod FROM presidente x
                   WHERE x.pres_gestao_ini <= CURRENT_DATE AND x.pres_gestao_fim >= CURRENT_DATE);
 
 COMMIT;
+-- ============================================================================
+-- INCREMENTO 2026-11 (Felipe Lima Santos): Parametrização do sistema
+-- Para quem já tem o banco carregado, rode só este bloco:
+--   psql -d Escoteiros -v ON_ERROR_STOP=1 -f <arquivo com o trecho abaixo>
+-- ============================================================================
+BEGIN;
+
+-- Parametrização: nome, logo e informações do sistema/grupo, alteráveis pela tela de Administração.
+-- Linha única (par_cod sempre 1). par_logo guarda a imagem como data URL (data:image/png;base64,...);
+-- NULL = o front usa o logo padrão que vem no projeto.
+CREATE TABLE parametrizacao (
+    par_cod           int4 NOT NULL,
+    par_sigla         VARCHAR(20) NOT NULL,
+    par_nome_sistema  VARCHAR(80) NOT NULL,
+    par_slogan        VARCHAR(50),
+    par_nome_grupo    VARCHAR(80) NOT NULL,
+    par_endereco      VARCHAR(150),
+    par_cidade        VARCHAR(50),
+    par_estado        VARCHAR(2),
+    par_telefone      VARCHAR(11),
+    par_email         VARCHAR(60),
+    par_logo          TEXT
+);
+ALTER TABLE parametrizacao ADD CONSTRAINT parametrizacao_pk PRIMARY KEY ( par_cod );
+ALTER TABLE parametrizacao ADD CONSTRAINT parametrizacao_linha_unica_ck CHECK ( par_cod = 1 );
+
+INSERT INTO parametrizacao (par_cod, par_sigla, par_nome_sistema, par_slogan, par_nome_grupo, par_endereco,
+                            par_cidade, par_estado, par_telefone, par_email, par_logo) VALUES
+    (1, 'SIGG', 'Sistema Integrado de Gestão Guayporé', 'Sempre Alerta', 'Grupo de Escoteiros Guayporé 186º/SP',
+     'Cidade da Criança - Casa do Escoteiro, Rodovia Raposo Tavares, S/N, Km 561,5', 'Presidente Prudente', 'SP',
+     '1839162262', 'contato@grupoescoteiroguaypore.com.br', NULL);
+
+COMMIT;
+
+-- ============================================================================
+-- INCREMENTO 2026-11 (Felipe Lima Santos): RF_F5 Ofertar Novas Atividades Pagas
+-- Para quem já tem o banco carregado, rode só este bloco:
+--   psql -d Escoteiros -v ON_ERROR_STOP=1 -f <arquivo com o trecho abaixo>
+-- ============================================================================
+BEGIN;
+
+-- RF_F5 Ofertar Novas Atividades Pagas: campos que o caso de uso pede e o modelo não tinha.
+-- Atividade paga = atv_valor preenchido. As já cadastradas ficam com local/vagas/prazo NULL.
+ALTER TABLE atividade_especial ADD COLUMN atv_local VARCHAR(100);
+ALTER TABLE atividade_especial ADD COLUMN atv_vagas int4;
+ALTER TABLE atividade_especial ADD COLUMN atv_prazo_interesse DATE;
+ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_vagas_ck CHECK ( atv_vagas IS NULL OR atv_vagas > 0 );
+ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_prazo_ck
+    CHECK ( atv_prazo_interesse IS NULL OR atv_prazo_interesse <= atv_data );
+
+COMMIT;

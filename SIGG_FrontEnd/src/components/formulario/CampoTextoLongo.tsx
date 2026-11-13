@@ -1,4 +1,5 @@
 import TextField from '@mui/material/TextField'
+import { adornoDeErro } from './adornoDeErro'
 import type { CampoBaseProps } from './tipos'
 
 interface CampoTextoLongoProps extends CampoBaseProps {
@@ -25,7 +26,7 @@ export default function CampoTextoLongo({
       error={!!erro}
       helperText={erro ?? ajuda ?? contador}
       onChange={(evento) => aoMudar(evento.target.value)}
-      slotProps={{ htmlInput: { maxLength: tamanhoMaximo } }}
+      slotProps={{ htmlInput: { maxLength: tamanhoMaximo }, input: { endAdornment: adornoDeErro(erro) } }}
     />
   )
 }

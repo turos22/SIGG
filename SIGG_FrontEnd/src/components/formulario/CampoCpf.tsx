@@ -2,6 +2,7 @@ import { useState } from 'react'
 import TextField from '@mui/material/TextField'
 import { formatarCpfParcial } from '@/data/utils/formatadores'
 import { cpfValido, somenteDigitos } from '@/data/utils/validadores'
+import { adornoDeErro } from './adornoDeErro'
 import type { CampoBaseProps } from './tipos'
 
 interface CampoCpfProps extends CampoBaseProps {
@@ -30,7 +31,7 @@ export default function CampoCpf({ rotulo, valor, aoMudar, obrigatorio, desabili
       helperText={mensagem ?? ajuda}
       onChange={(evento) => aoMudar(somenteDigitos(evento.target.value).slice(0, 11))}
       onBlur={() => setTocado(true)}
-      slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 14, autoComplete: 'off' } }}
+      slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 14, autoComplete: 'off' }, input: { endAdornment: adornoDeErro(mensagem) } }}
     />
   )
 }
