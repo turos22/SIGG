@@ -20,6 +20,30 @@ public class Responsavel {
         return new ResponsavelDAO().get(conexao);
     }
 
+    public List<Responsavel> doEscoteiro(Conexao conexao, int memCodEscoteiro) {
+        return new ResponsavelDAO().doEscoteiro(conexao, memCodEscoteiro);
+    }
+
+    public boolean existeVinculo(Conexao conexao, int memCodEscoteiro) {
+        return new ResponsavelDAO().existeVinculo(conexao, membro.getMem_cod(), memCodEscoteiro);
+    }
+
+    public boolean vincular(Conexao conexao, int memCodEscoteiro) {
+        return new ResponsavelDAO().vincular(conexao, membro.getMem_cod(), memCodEscoteiro);
+    }
+
+    public boolean desvincular(Conexao conexao, int memCodEscoteiro) {
+        return new ResponsavelDAO().desvincular(conexao, membro.getMem_cod(), memCodEscoteiro);
+    }
+
+    public int quantosVinculos(Conexao conexao) {
+        return new ResponsavelDAO().contarVinculos(conexao, membro.getMem_cod());
+    }
+
+    public boolean apagar(Conexao conexao) {
+        return new ResponsavelDAO().apagar(conexao, this);
+    }
+
     public boolean existe(Conexao conexao, int memCod) {
         return new ResponsavelDAO().existe(conexao, memCod);
     }

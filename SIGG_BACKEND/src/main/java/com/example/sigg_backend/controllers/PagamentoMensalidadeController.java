@@ -32,6 +32,16 @@ public class PagamentoMensalidadeController {
         return ResponseEntity.ok(facade.pesquisarEscoteiros(conexao, busca));
     }
 
+    @GetMapping("/situacoes")
+    public ResponseEntity<Object> listarSituacoes(@RequestParam(value = "tropa", required = false) Integer tropa) {
+        return ResponseEntity.ok(facade.listarSituacoes(conexao, tropa));
+    }
+
+    @PostMapping("/escoteiros/{escCod}/inadimplente")
+    public ResponseEntity<Object> marcarInadimplente(@PathVariable int escCod) {
+        return ResponseEntity.ok(facade.marcarInadimplente(conexao, escCod));
+    }
+
     @GetMapping("/escoteiros/{escCod}")
     public ResponseEntity<Object> consultarSituacao(@PathVariable int escCod) {
         return ResponseEntity.ok(facade.consultarSituacaoEscoteiro(conexao, escCod));

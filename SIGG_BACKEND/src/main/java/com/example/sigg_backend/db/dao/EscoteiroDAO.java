@@ -5,6 +5,7 @@ import com.example.sigg_backend.db.util.IDAO;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.Membro;
 import com.example.sigg_backend.models.Patrulha;
+import com.example.sigg_backend.models.Tropa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -90,6 +91,17 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
                 + " WHERE er.responsável_mem_cod = ?)", memCodResponsavel);
     }
 
+    public List<Escoteiro> daTropa(Conexao conexao, int troCod){
+        return buscar(conexao, "AND p.tropa_tro_cod = ?", troCod);
+    }
+
+    // Só categoria e patrulha: os dados da pessoa e a situação financeira não mudam por aqui
+    public boolean alterarCadastro(Conexao conexao, Escoteiro escoteiro){
+        return conexao.manipular("UPDATE escoteiro SET categoria_mensalidade_cat_mens_cod = ?, patrulha_pat_cod2 = ?"
+                        + " WHERE mem_cod = ?",
+                escoteiro.getCat_mensalidade(), escoteiro.getPatrulha().getCod(), escoteiro.getMembro().getMem_cod());
+    }
+
     public List<Escoteiro> doAnjo(Conexao conexao, int escCodAnjo){
         return buscar(conexao, "AND e.escoteiro_esc_cod = ? AND e.esc_cod <> e.escoteiro_esc_cod", escCodAnjo);
     }
@@ -98,6 +110,11 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
         return conexao.manipular(
                 "UPDATE escoteiro SET escoteiro_esc_cod = ? WHERE mem_cod = ?", escCodAnjo, memCod);
     }
+
+    // Colunas e junções que toda consulta de escoteiro usa para montar o Escoteiro com a patrulha e a tropa dela
+    public static final String COLUNAS = "m.*, e.*, p.pat_nome, pt.tro_cod AS pat_tro_cod, pt.tro_nome AS pat_tro_nome";
+    public static final String JUNCAO_PATRULHA = " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+            + " JOIN tropa pt ON pt.tro_cod = p.tropa_tro_cod";
 
     public void preencher(Escoteiro escoteiro, ResultSet rs) throws SQLException {
         escoteiro.setMembro(new MembroDAO().preencher(rs));
@@ -108,14 +125,15 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
         Patrulha patrulha = new Patrulha();
         patrulha.setCod(rs.getInt("patrulha_pat_cod2"));
         patrulha.setNome(rs.getString("pat_nome"));
+        patrulha.setTropa(new Tropa(rs.getInt("pat_tro_cod"), rs.getString("pat_tro_nome")));
         escoteiro.setPatrulha(patrulha);
     }
 
     private List<Escoteiro> buscar(Conexao conexao, String condicao, Object... valores){
         ResultSet rs = conexao.consultar(
-                "SELECT m.*, e.*, p.pat_nome FROM escoteiro e"
+                "SELECT " + COLUNAS + " FROM escoteiro e"
                         + " JOIN membro m ON m.mem_cod = e.mem_cod"
-                        + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                        + JUNCAO_PATRULHA
                         + " WHERE m.mem_dt_fim IS NULL " + condicao
                         + " ORDER BY m.mem_nome", valores);
         List<Escoteiro> escoteiros = new ArrayList<>();

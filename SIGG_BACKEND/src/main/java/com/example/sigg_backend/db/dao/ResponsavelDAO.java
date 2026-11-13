@@ -56,6 +56,35 @@ public class ResponsavelDAO implements IDAO<Responsavel> {
                 "AND er.escoteiro_mem_cod = ?", memCodEscoteiro);
     }
 
+    public boolean vincular(Conexao conexao, int memCodResp, int memCodEscoteiro){
+        return conexao.manipular("INSERT INTO escoteiro_responsavel (responsável_mem_cod, escoteiro_mem_cod) VALUES (?, ?)",
+                memCodResp, memCodEscoteiro);
+    }
+
+    public boolean desvincular(Conexao conexao, int memCodResp, int memCodEscoteiro){
+        return conexao.manipular("DELETE FROM escoteiro_responsavel WHERE responsável_mem_cod = ? AND escoteiro_mem_cod = ?",
+                memCodResp, memCodEscoteiro);
+    }
+
+    public boolean existeVinculo(Conexao conexao, int memCodResp, int memCodEscoteiro){
+        ResultSet rs = conexao.consultar("SELECT 1 FROM escoteiro_responsavel"
+                + " WHERE responsável_mem_cod = ? AND escoteiro_mem_cod = ?", memCodResp, memCodEscoteiro);
+        try {
+            return rs != null && rs.next();
+        } catch (SQLException sqlex) {
+            return false;
+        }
+    }
+
+    public int contarVinculos(Conexao conexao, int memCodResp){
+        ResultSet rs = conexao.consultar("SELECT count(*) FROM escoteiro_responsavel WHERE responsável_mem_cod = ?", memCodResp);
+        try {
+            return rs != null && rs.next() ? rs.getInt(1) : 0;
+        } catch (SQLException sqlex) {
+            return 0;
+        }
+    }
+
     public boolean existe(Conexao conexao, int memCod){
         ResultSet rs = conexao.consultar("SELECT 1 FROM responsável WHERE mem_cod = ?", memCod);
         try {

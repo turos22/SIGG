@@ -4,8 +4,10 @@ package com.example.sigg_backend.facade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.sigg_backend.models.CategoriaMensalidade;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.Membro;
+import com.example.sigg_backend.models.Patrulha;
 import com.example.sigg_backend.db.util.Conexao;
 
 
@@ -13,22 +15,24 @@ import com.example.sigg_backend.db.util.Conexao;
 public class EscoteiroFacade {
 
     private final MembroFacade membroFacade;
+    private final AutorizacaoFacade autorizacao;
 
-    public EscoteiroFacade(MembroFacade membroFacade) {
+    public EscoteiroFacade(MembroFacade membroFacade, AutorizacaoFacade autorizacao) {
         this.membroFacade = membroFacade;
+        this.autorizacao = autorizacao;
     }
 
     public Escoteiro buscar(Conexao conexao, int memCod) {
         Escoteiro escoteiro = new Escoteiro().buscar(conexao, memCod);
         if (escoteiro == null)
-            throw new RuntimeException("Escoteiro" + memCod + "não encontrado");
+            throw new NaoEncontradoException("Escoteiro " + memCod + " não encontrado");
         return escoteiro;
     }
 
     @Transactional
     public Escoteiro cadastrar(Conexao conexao, Escoteiro escoteiro) {
-        membroFacade.validarNovo(conexao, escoteiro.getMembro());
-        validar(escoteiro);
+        membroFacade.exigirCpfLivre(conexao, escoteiro.getMembro());
+        validar(conexao, escoteiro);
         gravar(conexao, escoteiro);
         return escoteiro;
     }
@@ -39,15 +43,28 @@ public class EscoteiroFacade {
         if (dados.existe(conexao, memCod))
             throw new RuntimeException(membro.getNome() + " já é escoteiro");
         dados.setMembro(membro);
-        validar(dados);
+        validar(conexao, dados);
         gravar(conexao, dados);
         return dados;
     }
 
-    private void validar(Escoteiro escoteiro) {
-        String problema = escoteiro.validar();
-        if (problema != null)
-            throw new RuntimeException(problema);
+    @Transactional
+    public Escoteiro alterar(Conexao conexao, int memCod, Escoteiro dados) {
+        autorizacao.exigirDiretoria(conexao);
+        Escoteiro atual = buscar(conexao, memCod);
+        dados.setMembro(atual.getMembro());
+        validar(conexao, dados);
+        if (!dados.alterarCadastro(conexao))
+            throw new IllegalStateException("Não foi possível alterar o escoteiro");
+        return buscar(conexao, memCod);
+    }
+
+    // Os campos já foram conferidos no controller: aqui só o que existe no banco
+    private void validar(Conexao conexao, Escoteiro escoteiro) {
+        if (CategoriaMensalidade.buscarPorId(conexao, escoteiro.getCat_mensalidade()) == null)
+            throw new RegraNegocioException("Categoria de mensalidade " + escoteiro.getCat_mensalidade() + " não existe");
+        if (new Patrulha().buscar(conexao, escoteiro.getPatrulha().getCod()) == null)
+            throw new NaoEncontradoException("Patrulha " + escoteiro.getPatrulha().getCod() + " não encontrada");
     }
 
     private void gravar(Conexao conexao, Escoteiro escoteiro) {

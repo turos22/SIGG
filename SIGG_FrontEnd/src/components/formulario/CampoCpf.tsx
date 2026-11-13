@@ -31,7 +31,7 @@ export default function CampoCpf({ rotulo, valor, aoMudar, obrigatorio, desabili
       helperText={mensagem ?? ajuda}
       onChange={(evento) => aoMudar(somenteDigitos(evento.target.value).slice(0, 11))}
       onBlur={() => setTocado(true)}
-      slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 14, autoComplete: 'off' }, input: { endAdornment: adornoDeErro(mensagem) } }}
+      slotProps={{ htmlInput: { inputMode: 'numeric', autoComplete: 'off' }, input: { endAdornment: adornoDeErro(mensagem) } }}
     />
   )
 }

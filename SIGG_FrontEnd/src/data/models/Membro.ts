@@ -14,4 +14,5 @@ export default interface Membro {
   email: string | null
   dt_ini: string
   dt_fim: string | null
+  papeis: string[] // só vem preenchido em GET /membros: Presidente, Chefe, Financeiro, Escoteiro, Responsável, Voluntário
 }

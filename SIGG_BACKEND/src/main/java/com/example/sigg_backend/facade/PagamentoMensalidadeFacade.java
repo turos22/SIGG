@@ -4,6 +4,7 @@ import com.example.sigg_backend.models.CategoriaMensalidade;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.FormaPagamento;
 import com.example.sigg_backend.models.PagamentoMensalidade;
+import com.example.sigg_backend.models.SituacaoEscoteiro;
 import com.example.sigg_backend.models.UsuarioLogado;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,32 @@ public class PagamentoMensalidadeFacade {
             throw new NaoEncontradoException("Escoteiro não localizado no sistema.");
         }
         return lista.toArray(new Escoteiro[0]);
+    }
+
+    // Grade de situação financeira: em dia, pendente (calculado) ou inadimplente (marcado pelo financeiro)
+    public List<SituacaoEscoteiro> listarSituacoes(Conexao conexao, Integer troCod) {
+        autorizacao.exigirDiretoria(conexao);
+        return PagamentoMensalidade.listarSituacoes(conexao, troCod);
+    }
+
+    // Só o financeiro marca, e só quem está pendente: o sistema nunca marca inadimplência sozinho
+    @Transactional
+    public Map<String, String> marcarInadimplente(Conexao conexao, int escCod) {
+        autorizacao.exigirPerfil(conexao, List.of(UsuarioLogado.ADMIN, UsuarioLogado.FINANCEIRO));
+        Escoteiro escoteiro = new Escoteiro().buscarPorCodigo(conexao, escCod);
+        if (escoteiro == null) {
+            throw new NaoEncontradoException("Escoteiro não encontrado.");
+        }
+        if (escoteiro.getEsc_sit_fin() == 1) {
+            throw new RegraNegocioException("Este escoteiro já está inadimplente");
+        }
+        if (!PagamentoMensalidade.possuiMensalidadeVencidaEmAberto(conexao, escCod)) {
+            throw new RegraNegocioException("Este escoteiro não possui mensalidades em atraso e não pode ser marcado como Inadimplente");
+        }
+        if (!PagamentoMensalidade.atualizarSituacaoFinanceiraEscoteiro(conexao, escCod, 1)) {
+            throw new IllegalStateException("Não foi possível marcar o escoteiro como inadimplente.");
+        }
+        return Map.of("mensagem", escoteiro.getMembro().getNome() + " foi marcado(a) como inadimplente.");
     }
 
     public Map<String, Object> consultarSituacaoEscoteiro(Conexao conexao, int escCod) {
@@ -150,10 +177,7 @@ public class PagamentoMensalidadeFacade {
             throw new IllegalStateException("Não foi possível estornar o pagamento.");
         }
 
-        if (PagamentoMensalidade.possuiMensalidadeVencidaEmAberto(conexao, pag.getEscCod())) {
-            PagamentoMensalidade.atualizarSituacaoFinanceiraEscoteiro(conexao, pag.getEscCod(), 1);
-        }
-
+        // O estorno só reabre a mensalidade: quem passa a dever aparece como pendente, e só o financeiro marca inadimplente
         return Map.of("mensagem", "Estorno concluído! A mensalidade " + pag.getReferencia() + " foi reaberta.");
     }
 }

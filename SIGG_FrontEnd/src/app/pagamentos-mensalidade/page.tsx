@@ -10,14 +10,17 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
+import Tooltip from '@mui/material/Tooltip'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Grade, { type ColunaGrade } from '@/components/grade/Grade'
 import { BotaoCancelar, BotaoOk } from '@/components/formulario/Botoes'
+import CampoSelecao from '@/components/formulario/CampoSelecao'
 import CampoTexto from '@/components/formulario/CampoTexto'
 import DialogoConfirmacao from '@/components/formulario/DialogoConfirmacao'
-import type Escoteiro from '@/data/models/Escoteiro'
+import type { SituacaoEscoteiro, SituacaoFinanceira } from '@/data/models/SituacaoEscoteiro'
+import type Tropa from '@/data/models/Tropa'
 import type {
     FormaPagamento,
     PagamentoMensalidade,
@@ -29,10 +32,12 @@ import {
     buscarFormasPagamento,
     consultarSituacaoFinanceiraEscoteiro,
     estornarPagamentoMensalidade,
-    pesquisarEscoteirosPagamento,
+    listarSituacoes,
+    marcarInadimplente,
     registrarPagamentoMensalidade,
 } from '@/data/services/pagamentosMensalidade'
 import { useParametrizacao } from '@/data/contexts/ParametrizacaoContexto'
+import { listarTropas } from '@/data/services/tropa'
 import { formatarData } from '@/data/utils/datas'
 import { mensagemDeErro } from '@/data/utils/erros'
 import { formatarCpf, formatarMoeda } from '@/data/utils/formatadores'
@@ -51,29 +56,50 @@ const ROTULO_SITUACAO: Record<SituacaoParcelaMensalidade, string> = {
     ABERTA: 'Em aberto',
 }
 
-const colunasEscoteiros: ColunaGrade<Escoteiro>[] = [
-    { id: 'nome', titulo: 'Nome', valor: (e) => e.membro.nome },
-    { id: 'cpf', titulo: 'CPF', valor: (e) => e.membro.CPF, renderizar: (e) => formatarCpf(e.membro.CPF) },
+const ROTULO_FINANCEIRO: Record<SituacaoFinanceira, string> = {
+    EM_DIA: 'Em dia',
+    PENDENTE: 'Mensalidades Pendentes',
+    INADIMPLENTE: 'Inadimplente',
+}
+
+const COR_FINANCEIRO: Record<SituacaoFinanceira, 'success' | 'warning' | 'error'> = {
+    EM_DIA: 'success',
+    PENDENTE: 'warning',
+    INADIMPLENTE: 'error',
+}
+
+const TODAS = 0
+
+const colunasEscoteiros: ColunaGrade<SituacaoEscoteiro>[] = [
+    { id: 'nome', titulo: 'Nome', valor: (e) => e.nome },
+    { id: 'cpf', titulo: 'CPF', valor: (e) => e.cpf, renderizar: (e) => formatarCpf(e.cpf) },
     { id: 'matricula', titulo: 'Matrícula', valor: (e) => e.esc_cod, largura: 110 },
-    { id: 'patrulha', titulo: 'Patrulha', valor: (e) => e.patrulha.nome },
+    { id: 'tropa', titulo: 'Tropa', valor: (e) => e.tropa },
+    { id: 'patrulha', titulo: 'Patrulha', valor: (e) => e.patrulha },
+    { id: 'abertas', titulo: 'Mensalidades abertas', valor: (e) => e.mensalidades_abertas, largura: 150 },
     {
         id: 'situacao',
         titulo: 'Situação Financeira',
-        valor: (e) => e.esc_sit_fin,
-        renderizar: (e) => (
-            <Chip
-                size="small"
-                color={e.esc_sit_fin === 1 ? 'error' : 'success'}
-                label={e.esc_sit_fin === 1 ? 'Inadimplente' : 'Em dia'}
-            />
-        ),
+        valor: (e) => ROTULO_FINANCEIRO[e.situacao],
+        renderizar: (e) => <Chip size="small" color={COR_FINANCEIRO[e.situacao]} label={ROTULO_FINANCEIRO[e.situacao]} />,
     },
 ]
+
+// A busca é feita sobre a lista já carregada: nome, CPF (com ou sem máscara) ou matrícula
+function combina(e: SituacaoEscoteiro, termo: string): boolean {
+    const t = termo.trim().toLowerCase()
+    if (!t) return true
+    const digitos = t.replace(/\D/g, '')
+    return e.nome.toLowerCase().includes(t) || (digitos !== '' && (e.cpf.includes(digitos) || String(e.esc_cod) === digitos))
+}
 
 export default function PaginaPagamentosMensalidade() {
     const { parametrizacao } = useParametrizacao()
     const [busca, setBusca] = useState('')
-    const [encontrados, setEncontrados] = useState<Escoteiro[]>([])
+    const [situacoes, setSituacoes] = useState<SituacaoEscoteiro[]>([])
+    const [tropas, setTropas] = useState<Tropa[]>([])
+    const [tropaFiltro, setTropaFiltro] = useState<number>(TODAS)
+    const [escoteiroInadimplente, setEscoteiroInadimplente] = useState<SituacaoEscoteiro | null>(null)
     const [situacao, setSituacao] = useState<SituacaoFinanceiraEscoteiro | null>(null)
     const [formasPagamento, setFormasPagamento] = useState<FormaPagamento[]>([
         { tp_cod: 1, tp_desc: 'Dinheiro' },
@@ -96,8 +122,8 @@ export default function PaginaPagamentosMensalidade() {
     const [recibo, setRecibo] = useState<ReciboPagamentoMensalidade | null>(null)
 
     const carregarListaInicial = () => {
-        pesquisarEscoteirosPagamento('')
-            .then((lista) => setEncontrados(lista))
+        listarSituacoes(tropaFiltro === TODAS ? undefined : tropaFiltro)
+            .then((lista) => setSituacoes(lista))
             .catch(() => {})
     }
 
@@ -107,9 +133,20 @@ export default function PaginaPagamentosMensalidade() {
                 if (lista.length > 0) setFormasPagamento(lista)
             })
             .catch(() => {})
-
-        carregarListaInicial()
+        listarTropas()
+            .then((lista) => setTropas(lista))
+            .catch(() => {})
     }, [])
+
+    useEffect(() => {
+        let ativo = true
+        listarSituacoes(tropaFiltro === TODAS ? undefined : tropaFiltro)
+            .then((lista) => ativo && setSituacoes(lista))
+            .catch(() => {})
+        return () => {
+            ativo = false
+        }
+    }, [tropaFiltro])
 
     const carregarSituacao = async (escCod: number) => {
         setCarregando(true)
@@ -130,17 +167,25 @@ export default function PaginaPagamentosMensalidade() {
         setErro('')
         setSucesso('')
         setSituacao(null)
-        setCarregando(true)
+        const achados = situacoes.filter((s) => combina(s, busca))
+        if (achados.length === 0) setErro('Escoteiro não localizado no sistema.')
+        else if (achados.length === 1) await carregarSituacao(achados[0].esc_cod)
+    }
 
+    const handleConfirmarInadimplencia = async () => {
+        if (!escoteiroInadimplente) return
+        const alvo = escoteiroInadimplente
+        setEscoteiroInadimplente(null)
+        setCarregando(true)
+        setErro('')
+        setSucesso('')
         try {
-            const lista = await pesquisarEscoteirosPagamento(busca)
-            setEncontrados(lista)
-            if (lista.length === 1) {
-                await carregarSituacao(lista[0].esc_cod)
-            }
+            const resp = await marcarInadimplente(alvo.esc_cod)
+            setSucesso(resp.mensagem)
+            if (situacao?.esc_cod === alvo.esc_cod) await carregarSituacao(alvo.esc_cod)
+            carregarListaInicial()
         } catch (err) {
-            setEncontrados([])
-            setErro(mensagemDeErro(err, 'Escoteiro não localizado no sistema.'))
+            setErro(mensagemDeErro(err, 'Não foi possível marcar o escoteiro como inadimplente.'))
         } finally {
             setCarregando(false)
         }
@@ -308,18 +353,58 @@ export default function PaginaPagamentosMensalidade() {
                 )}
             </Box>
 
-            {encontrados.length > 0 && (
+            <Box sx={{ maxWidth: 320, mb: 2 }}>
+                <CampoSelecao
+                    rotulo="Tropa"
+                    valor={tropaFiltro}
+                    opcoes={[{ valor: TODAS, rotulo: 'Todas as tropas' }, ...tropas.map((t) => ({ valor: t.cod, rotulo: t.nome }))]}
+                    aoMudar={(cod) => setTropaFiltro(cod ?? TODAS)}
+                />
+            </Box>
+
+            {situacoes.length > 0 && (
                 <Grade
                     titulo="Escoteiros"
                     subtitulo="Clique sobre o escoteiro para consultar e registrar pagamentos"
                     colunas={colunasEscoteiros}
-                    linhas={encontrados}
+                    linhas={situacoes.filter((s) => combina(s, busca))}
                     chave={(e) => e.esc_cod}
                     chaveSelecionada={situacao?.esc_cod ?? null}
                     aoClicarLinha={(e) => carregarSituacao(e.esc_cod)}
-                    linhasPorPagina={5}
+                    linhasPorPagina={8}
+                    acoes={(e) =>
+                        e.situacao === 'PENDENTE' && (
+                            <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                                <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    onClick={(evento) => {
+                                        evento.stopPropagation()
+                                        setEscoteiroInadimplente(e)
+                                    }}
+                                >
+                                    Marcar como inadimplente
+                                </Button>
+                                <Tooltip title="Em breve: envio do alerta por e-mail">
+                                    <span>
+                                        <Button size="small" variant="outlined" disabled>Enviar alerta</Button>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
+                        )
+                    }
                 />
             )}
+
+            <DialogoConfirmacao
+                aberto={escoteiroInadimplente !== null}
+                titulo="Marcar como inadimplente"
+                rotuloConfirmar="Marcar"
+                mensagem={<>Marcar <strong>{escoteiroInadimplente?.nome}</strong> como inadimplente? Ele tem {escoteiroInadimplente?.mensalidades_abertas} mensalidade(s) em aberto.</>}
+                aoConfirmar={handleConfirmarInadimplencia}
+                aoCancelar={() => setEscoteiroInadimplente(null)}
+            />
 
             {situacao && (
                 <Stack spacing={2.5} sx={{ mt: 2 }}>

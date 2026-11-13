@@ -5,7 +5,8 @@ import type Presidente from '@/data/models/Presidente'
 import type Responsavel from '@/data/models/Responsavel'
 import type SaudeApi from '@/data/models/SaudeApi'
 import { requisitar } from '@/data/services/api'
-import type { DadosEscoteiro } from '@/components/escoteiros/FormsEscoteiros';
+import type { DadosPessoa } from '@/data/models/DadosPessoa'
+import type Membro from '@/data/models/Membro'
 
 export function buscarSaudeDoBanco(): Promise<SaudeApi> {
   return requisitar<SaudeApi>('/health/db')
@@ -31,33 +32,43 @@ export function buscarFinanceiros(): Promise<Financeiro[]> {
   return requisitar<Financeiro[]>('/financeiros')
 }
 
-export async function PostMembro(dados: DadosEscoteiro): Promise<Escoteiro> {
-  const corpo = {
-    membro: {
-      nome: dados.nome,
-      dt_nascto: dados.dt_nascto,
-      CPF: dados.CPF,
-      RG: dados.RG,
-      CEP: dados.CEP,
-      endereco: dados.endereco,
-      endereco_num: dados.endereco_num,
-      endereco_bairro: dados.endereco_bairro,
-      cidade: dados.cidade,
-      estado: dados.estado,
-      telefone: dados.telefone || null, 
-      email: dados.email || null,
-    },
-    cat_mensalidade: dados.cat_mensalidade,
-    patrulha: { cod: dados.patrulha_cod },
-  }
-  return await requisitar<Escoteiro>('/escoteiros', {
-    method: 'POST',
-    body: JSON.stringify(corpo),
-  })
+export function listarMembros(somenteVoluntarios = false): Promise<Membro[]> {
+  return requisitar<Membro[]>(somenteVoluntarios ? '/membros?voluntarios=true' : '/membros')
 }
 
-export async function ExcluirMembro(cod: number): Promise<void> {
-  return await requisitar<void>(`/membros/${cod}`, {
-    method: 'DELETE',
-  })
+function corpoDaPessoa(dados: DadosPessoa) {
+  return { ...dados, telefone: dados.telefone || null, email: dados.email || null }
+}
+
+export function cadastrarMembro(dados: DadosPessoa): Promise<Membro> {
+  return requisitar<Membro>('/membros', { method: 'POST', body: JSON.stringify(corpoDaPessoa(dados)) })
+}
+
+export function alterarMembro(memCod: number, dados: DadosPessoa): Promise<Membro> {
+  return requisitar<Membro>(`/membros/${memCod}`, { method: 'PUT', body: JSON.stringify(corpoDaPessoa(dados)) })
+}
+
+export function excluirMembro(memCod: number): Promise<{ mensagem: string }> {
+  return requisitar(`/membros/${memCod}`, { method: 'DELETE' })
+}
+
+// Promoções: só presidente (ou admin) pode. Chefe e presidente exigem que a pessoa já seja escoteira.
+export function promoverAChefe(memCod: number, dados: { tropa: { cod: number }; gestao_ini: string }): Promise<Chefe> {
+  return requisitar<Chefe>(`/escoteiros/${memCod}/chefe`, { method: 'POST', body: JSON.stringify(dados) })
+}
+
+export function promoverAPresidente(memCod: number, dados: { gestao_ini: string; gestao_fim: string }): Promise<Presidente> {
+  return requisitar<Presidente>(`/escoteiros/${memCod}/presidente`, { method: 'POST', body: JSON.stringify(dados) })
+}
+
+export function promoverAFinanceiro(memCod: number): Promise<Financeiro> {
+  return requisitar<Financeiro>(`/membros/${memCod}/financeiro`, { method: 'POST' })
+}
+
+export function encerrarChefe(memCod: number): Promise<{ mensagem: string }> {
+  return requisitar(`/chefes/${memCod}`, { method: 'DELETE' })
+}
+
+export function removerFinanceiro(memCod: number): Promise<{ mensagem: string }> {
+  return requisitar(`/financeiros/${memCod}`, { method: 'DELETE' })
 }

@@ -69,6 +69,24 @@ public class MembroDAO implements IDAO<Membro> {
     }
 
 
+    public boolean existeCpfDeOutro(Conexao conexao, String cpf, int memCod){
+        ResultSet rs = conexao.consultar("SELECT 1 FROM membro WHERE mem_cpf = ? AND mem_cod <> ?", cpf, memCod);
+        try {
+            return rs != null && rs.next();
+        } catch (SQLException sqlex) {
+            return false;
+        }
+    }
+
+    public List<Membro> listarComPapeis(Conexao conexao, boolean somenteVoluntarios){
+        return buscarComPapeis(conexao, somenteVoluntarios ? "AND " + VOLUNTARIO : "");
+    }
+
+    public Membro getComPapeis(Conexao conexao, int memCod){
+        List<Membro> membros = buscarComPapeis(conexao, "AND m.mem_cod = ?", memCod);
+        return membros.isEmpty() ? null : membros.get(0);
+    }
+
     public Membro preencher(ResultSet rs) throws SQLException {
         Membro membro = new Membro();
         membro.setMem_cod(rs.getInt("mem_cod"));
@@ -97,6 +115,42 @@ public class MembroDAO implements IDAO<Membro> {
         try {
             while (rs != null && rs.next())
                 membros.add(preencher(rs));
+        } catch (SQLException sqlex) {
+            membros.clear();
+        }
+        return membros;
+    }
+
+    private static final String VOLUNTARIO = "m.mem_dt_nascto <= CURRENT_DATE - INTERVAL '18 years'";
+
+    // Papéis vigentes: presidente com gestão cobrindo hoje, chefe sem gestão encerrada (mesmo critério do login).
+    // Voluntário não é tabela: é qualquer pessoa com 18 anos ou mais.
+    private List<Membro> buscarComPapeis(Conexao conexao, String condicao, Object... valores){
+        ResultSet rs = conexao.consultar(
+                "SELECT m.*,"
+                        + " EXISTS (SELECT 1 FROM presidente x WHERE x.mem_cod = m.mem_cod"
+                        + "   AND x.pres_gestao_ini <= CURRENT_DATE AND x.pres_gestao_fim >= CURRENT_DATE) AS eh_presidente,"
+                        + " EXISTS (SELECT 1 FROM chefe x WHERE x.mem_cod = m.mem_cod"
+                        + "   AND (x.chefe_gestao_fim IS NULL OR x.chefe_gestao_fim >= CURRENT_DATE)) AS eh_chefe,"
+                        + " EXISTS (SELECT 1 FROM financeiro x WHERE x.mem_cod = m.mem_cod) AS eh_financeiro,"
+                        + " EXISTS (SELECT 1 FROM escoteiro x WHERE x.mem_cod = m.mem_cod) AS eh_escoteiro,"
+                        + " EXISTS (SELECT 1 FROM responsável x WHERE x.mem_cod = m.mem_cod) AS eh_responsavel,"
+                        + " (" + VOLUNTARIO + ") AS eh_voluntario"
+                        + " FROM membro m WHERE m.mem_dt_fim IS NULL " + condicao + " ORDER BY m.mem_nome", valores);
+        List<Membro> membros = new ArrayList<>();
+        try {
+            while (rs != null && rs.next()) {
+                Membro membro = preencher(rs);
+                List<String> papeis = new ArrayList<>();
+                if (rs.getBoolean("eh_presidente")) papeis.add("Presidente");
+                if (rs.getBoolean("eh_chefe")) papeis.add("Chefe");
+                if (rs.getBoolean("eh_financeiro")) papeis.add("Financeiro");
+                if (rs.getBoolean("eh_escoteiro")) papeis.add("Escoteiro");
+                if (rs.getBoolean("eh_responsavel")) papeis.add("Responsável");
+                if (rs.getBoolean("eh_voluntario")) papeis.add("Voluntário");
+                membro.setPapeis(papeis);
+                membros.add(membro);
+            }
         } catch (SQLException sqlex) {
             membros.clear();
         }

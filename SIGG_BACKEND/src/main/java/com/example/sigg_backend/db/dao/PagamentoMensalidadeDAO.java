@@ -5,6 +5,7 @@ import com.example.sigg_backend.db.util.Datas;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.FormaPagamento;
 import com.example.sigg_backend.models.PagamentoMensalidade;
+import com.example.sigg_backend.models.SituacaoEscoteiro;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,9 +34,9 @@ public class PagamentoMensalidadeDAO {
 
     public Escoteiro[] listarEscoteirosComResumo(Conexao conexao) {
         List<Escoteiro> lista = new ArrayList<>();
-        String sql = "SELECT m.*, e.*, p.pat_nome FROM escoteiro e"
+        String sql = "SELECT " + EscoteiroDAO.COLUNAS + " FROM escoteiro e"
                 + " JOIN membro m ON m.mem_cod = e.mem_cod"
-                + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                + EscoteiroDAO.JUNCAO_PATRULHA
                 + " WHERE m.mem_dt_fim IS NULL"
                 + " ORDER BY e.esc_sit_fin DESC, m.mem_nome ASC";
         try (ResultSet rs = conexao.consultar(sql)) {
@@ -49,6 +50,53 @@ public class PagamentoMensalidadeDAO {
             throw new IllegalStateException("Erro ao listar escoteiros: " + e.getMessage(), e);
         }
         return lista.toArray(new Escoteiro[0]);
+    }
+
+    // Uma consulta só: por escoteiro, quantas mensalidades estão em aberto (pago < devido) e quantas delas já venceram.
+    // O vencimento é o da parcela (mesmo critério de possuiMensalidadeVencidaEmAberto).
+    public List<SituacaoEscoteiro> listarSituacoes(Conexao conexao, Integer troCod) {
+        List<Object> valores = new ArrayList<>();
+        String filtro = "";
+        if (troCod != null) {
+            filtro = " AND t.tro_cod = ?";
+            valores.add(troCod);
+        }
+        String sql = "SELECT e.esc_cod, m.mem_cod, m.mem_nome, m.mem_cpf, t.tro_nome, p.pat_nome,"
+                + " COALESCE(e.esc_sit_fin, 0) AS sit_fin, COALESCE(ab.abertas, 0) AS abertas,"
+                + " COALESCE(ab.vencidas, 0) AS vencidas"
+                + " FROM escoteiro e JOIN membro m ON m.mem_cod = e.mem_cod"
+                + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                + " JOIN tropa t ON t.tro_cod = p.tropa_tro_cod"
+                + " LEFT JOIN (SELECT x.esc_cod, COUNT(*) AS abertas,"
+                + "      COUNT(*) FILTER (WHERE x.vencimento < CURRENT_DATE) AS vencidas"
+                + "   FROM (SELECT me.escoteiro_esc_cod AS esc_cod, cr.cr_cod, cr.cr_valor,"
+                + "           COALESCE(SUM(pg.pg_valor_pago), 0) AS pago, MIN(pg.pg_dt_vencto) AS vencimento"
+                + "         FROM mensalidade me JOIN contas_receber cr ON cr.mensalidade_mens_cod = me.mens_cod"
+                + "           AND cr.atividade_especial_atv_cod = " + ATIVIDADE_MENSALIDADE
+                + "         LEFT JOIN pagamento pg ON pg.contas_receber_cr_cod = cr.cr_cod"
+                + "         GROUP BY me.escoteiro_esc_cod, cr.cr_cod, cr.cr_valor) x"
+                + "   WHERE x.pago < x.cr_valor GROUP BY x.esc_cod) ab ON ab.esc_cod = e.esc_cod"
+                + " WHERE m.mem_dt_fim IS NULL" + filtro
+                + " ORDER BY (CASE WHEN COALESCE(e.esc_sit_fin, 0) = 1 THEN 0"
+                + "   WHEN COALESCE(ab.vencidas, 0) > 0 THEN 1 ELSE 2 END), m.mem_nome";
+        List<SituacaoEscoteiro> situacoes = new ArrayList<>();
+        try (ResultSet rs = conexao.consultar(sql, valores.toArray())) {
+            while (rs != null && rs.next()) {
+                SituacaoEscoteiro situacao = new SituacaoEscoteiro();
+                situacao.setEsc_cod(rs.getInt("esc_cod"));
+                situacao.setMem_cod(rs.getInt("mem_cod"));
+                situacao.setNome(rs.getString("mem_nome"));
+                situacao.setCpf(rs.getString("mem_cpf"));
+                situacao.setTropa(rs.getString("tro_nome"));
+                situacao.setPatrulha(rs.getString("pat_nome"));
+                situacao.setMensalidades_abertas(rs.getInt("abertas"));
+                situacao.setSituacao(SituacaoEscoteiro.calcular(rs.getInt("sit_fin"), rs.getInt("vencidas")));
+                situacoes.add(situacao);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Erro ao listar situações financeiras: " + e.getMessage(), e);
+        }
+        return situacoes;
     }
 
     public PagamentoMensalidade[] listarPorEscoteiro(Conexao conexao, int escCod) {
@@ -150,8 +198,8 @@ public class PagamentoMensalidadeDAO {
         }
     }
 
-    public void atualizarSituacaoFinanceiraEscoteiro(Conexao conexao, int escCod, int sitFin) {
-        conexao.manipular(
+    public boolean atualizarSituacaoFinanceiraEscoteiro(Conexao conexao, int escCod, int sitFin) {
+        return conexao.manipular(
                 "UPDATE escoteiro SET esc_sit_fin = ? WHERE esc_cod = ?",
                 sitFin, escCod
         );

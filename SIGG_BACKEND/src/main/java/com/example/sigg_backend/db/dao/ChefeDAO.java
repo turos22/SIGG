@@ -8,6 +8,7 @@ import com.example.sigg_backend.models.Tropa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +55,28 @@ public class ChefeDAO implements IDAO<Chefe> {
         return chefes.isEmpty() ? null : chefes.get(0);
     }
 
+    // Quem já foi chefe volta pela mesma linha (mem_cod é a chave): nova tropa e nova gestão, sem data de fim
+    public boolean reativar(Conexao conexao, Chefe chefe){
+        return conexao.manipular("UPDATE chefe SET chefe_gestao_ini = ?, chefe_gestao_fim = NULL, tropa_tro_cod = ?"
+                        + " WHERE mem_cod = ?",
+                chefe.getGestao_ini(), chefe.getTropa().getCod(), chefe.getMembro().getMem_cod());
+    }
+
+    public boolean encerrar(Conexao conexao, int memCod, LocalDate fim){
+        return conexao.manipular("UPDATE chefe SET chefe_gestao_fim = ? WHERE mem_cod = ?", fim, memCod);
+    }
+
+    // Tropa da gestão em andamento (mesmo critério do login: sem fim ou fim >= hoje); null se não há
+    public Integer tropaAtiva(Conexao conexao, int memCod){
+        ResultSet rs = conexao.consultar("SELECT tropa_tro_cod FROM chefe WHERE mem_cod = ?"
+                + " AND (chefe_gestao_fim IS NULL OR chefe_gestao_fim >= CURRENT_DATE)", memCod);
+        try {
+            return rs != null && rs.next() ? rs.getInt("tropa_tro_cod") : null;
+        } catch (SQLException sqlex) {
+            return null;
+        }
+    }
+
     public boolean existe(Conexao conexao, int memCod){
         ResultSet rs = conexao.consultar("SELECT 1 FROM chefe WHERE mem_cod = ?", memCod);
         try {
@@ -65,12 +88,12 @@ public class ChefeDAO implements IDAO<Chefe> {
 
     private List<Chefe> buscar(Conexao conexao, String condicao, Object... valores){
         ResultSet rs = conexao.consultar(
-                "SELECT m.*, e.*, p.pat_nome, c.chefe_cod, c.chefe_gestao_ini, c.chefe_gestao_fim,"
+                "SELECT " + EscoteiroDAO.COLUNAS + ", c.chefe_cod, c.chefe_gestao_ini, c.chefe_gestao_fim,"
                         + " c.tropa_tro_cod AS chefe_tro_cod, t.tro_nome AS chefe_tro_nome"
                         + " FROM chefe c"
                         + " JOIN escoteiro e ON e.mem_cod = c.mem_cod"
                         + " JOIN membro m ON m.mem_cod = c.mem_cod"
-                        + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                        + EscoteiroDAO.JUNCAO_PATRULHA
                         + " JOIN tropa t ON t.tro_cod = c.tropa_tro_cod"
                         + " WHERE m.mem_dt_fim IS NULL " + condicao
                         + " ORDER BY m.mem_nome", valores);

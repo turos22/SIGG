@@ -71,4 +71,18 @@ class PromocaoTest {
         assertEquals(1, contar("SELECT count(*) FROM presidente WHERE mem_cod = 12 AND pres_cod = ? "
                 + "AND pres_gestao_ini = DATE '2026-01-01' AND pres_gestao_fim = DATE '2027-12-31'", presCod));
     }
+
+    // O formato do corpo é conferido no controller
+    @Test
+    void promocaoComDatasInvalidasDevolve400() throws Exception {
+        enviar("/escoteiros/12/presidente", "{\"gestao_ini\":\"2028-12-31\",\"gestao_fim\":\"2027-01-01\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("O fim da gestão não pode ser antes do início"));
+        enviar("/escoteiros/11/chefe", "{\"tropa\":{\"cod\":2}}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("Início da gestão é obrigatório"));
+        enviar("/escoteiros/11/chefe", "{\"gestao_ini\":\"2026-11-01\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("Tropa é obrigatória"));
+    }
 }

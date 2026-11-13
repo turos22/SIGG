@@ -41,6 +41,23 @@ public class Chefe extends Escoteiro {
         return new ChefeDAO().existe(conexao, memCod);
     }
 
+    // A gestão vale até o último dia (inclusive), como no login e na lista de membros
+    public boolean estaAtivo() {
+        return gestao_fim == null || !gestao_fim.isBefore(LocalDate.now());
+    }
+
+    public Integer tropaAtiva(Conexao conexao, int memCod) {
+        return new ChefeDAO().tropaAtiva(conexao, memCod);
+    }
+
+    public boolean reativar(Conexao conexao) {
+        return new ChefeDAO().reativar(conexao, this);
+    }
+
+    public boolean encerrar(Conexao conexao, LocalDate fim) {
+        return new ChefeDAO().encerrar(conexao, getMembro().getMem_cod(), fim);
+    }
+
     public List<Chefe> listarChefes(Conexao conexao) {
         return new ChefeDAO().get(conexao);
     }

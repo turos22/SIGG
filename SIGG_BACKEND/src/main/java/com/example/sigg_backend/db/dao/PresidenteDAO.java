@@ -7,6 +7,7 @@ import com.example.sigg_backend.models.Presidente;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +54,21 @@ public class PresidenteDAO implements IDAO<Presidente> {
         return presidentes.isEmpty() ? null : presidentes.get(0);
     }
 
+    // Gestões que cobrem hoje; a lista traz quem exerce o cargo agora
+    public List<Presidente> vigentes(Conexao conexao){
+        return buscar(conexao, "AND pr.pres_gestao_ini <= CURRENT_DATE AND pr.pres_gestao_fim >= CURRENT_DATE");
+    }
+
+    // Só as datas da gestão: o alterar() acima também reescreve a pessoa e o escoteiro
+    public boolean atualizarGestao(Conexao conexao, Presidente presidente){
+        return conexao.manipular("UPDATE presidente SET pres_gestao_ini = ?, pres_gestao_fim = ? WHERE mem_cod = ?",
+                presidente.getGestao_ini(), presidente.getGestao_fim(), presidente.getMembro().getMem_cod());
+    }
+
+    public boolean encerrarGestao(Conexao conexao, int memCod, LocalDate fim){
+        return conexao.manipular("UPDATE presidente SET pres_gestao_fim = ? WHERE mem_cod = ?", fim, memCod);
+    }
+
     public boolean existe(Conexao conexao, int memCod){
         ResultSet rs = conexao.consultar("SELECT 1 FROM presidente WHERE mem_cod = ?", memCod);
         try {
@@ -65,11 +81,11 @@ public class PresidenteDAO implements IDAO<Presidente> {
 
     private List<Presidente> buscar(Conexao conexao, String condicao, Object... valores){
         ResultSet rs = conexao.consultar(
-                "SELECT m.*, e.*, p.pat_nome, pr.pres_cod, pr.pres_gestao_ini, pr.pres_gestao_fim"
+                "SELECT " + EscoteiroDAO.COLUNAS + ", pr.pres_cod, pr.pres_gestao_ini, pr.pres_gestao_fim"
                         + " FROM presidente pr"
                         + " JOIN escoteiro e ON e.mem_cod = pr.mem_cod"
                         + " JOIN membro m ON m.mem_cod = pr.mem_cod"
-                        + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                        + EscoteiroDAO.JUNCAO_PATRULHA
                         + " WHERE m.mem_dt_fim IS NULL " + condicao
                         + " ORDER BY m.mem_nome", valores);
         List<Presidente> presidentes = new ArrayList<>();
