@@ -38,6 +38,23 @@ public class Presidente extends Escoteiro {
         return new PresidenteDAO().existe(conexao, memCod);
     }
 
+    public boolean estaVigente() {
+        LocalDate hoje = LocalDate.now();
+        return !gestao_ini.isAfter(hoje) && !gestao_fim.isBefore(hoje);
+    }
+
+    public List<Presidente> vigentes(Conexao conexao) {
+        return new PresidenteDAO().vigentes(conexao);
+    }
+
+    public boolean atualizarGestao(Conexao conexao) {
+        return new PresidenteDAO().atualizarGestao(conexao, this);
+    }
+
+    public boolean encerrarGestao(Conexao conexao, LocalDate fim) {
+        return new PresidenteDAO().encerrarGestao(conexao, getMembro().getMem_cod(), fim);
+    }
+
     public List<Presidente> listarPresidentes(Conexao conexao) {
         return new PresidenteDAO().get(conexao);
     }

@@ -8,6 +8,7 @@ import com.example.sigg_backend.models.Tropa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +53,17 @@ public class ChefeDAO implements IDAO<Chefe> {
     public Chefe get(Conexao conexao, int id){
         List<Chefe> chefes = buscar(conexao, "AND c.mem_cod = ?", id);
         return chefes.isEmpty() ? null : chefes.get(0);
+    }
+
+    // Quem já foi chefe volta pela mesma linha (mem_cod é a chave): nova tropa e nova gestão, sem data de fim
+    public boolean reativar(Conexao conexao, Chefe chefe){
+        return conexao.manipular("UPDATE chefe SET chefe_gestao_ini = ?, chefe_gestao_fim = NULL, tropa_tro_cod = ?"
+                        + " WHERE mem_cod = ?",
+                chefe.getGestao_ini(), chefe.getTropa().getCod(), chefe.getMembro().getMem_cod());
+    }
+
+    public boolean encerrar(Conexao conexao, int memCod, LocalDate fim){
+        return conexao.manipular("UPDATE chefe SET chefe_gestao_fim = ? WHERE mem_cod = ?", fim, memCod);
     }
 
     public boolean existe(Conexao conexao, int memCod){

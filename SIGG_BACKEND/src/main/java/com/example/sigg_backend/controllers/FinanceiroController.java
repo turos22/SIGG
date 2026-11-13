@@ -5,7 +5,9 @@ import com.example.sigg_backend.models.Financeiro;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +30,11 @@ public class FinanceiroController {
     @GetMapping
     public ResponseEntity<Object> listar(){
         return ResponseEntity.ok(new Financeiro().listar(conexao));
+    }
+
+    @DeleteMapping("/{memCod}")
+    public ResponseEntity<Object> remover(@PathVariable int memCod){
+        return ResponseEntity.ok(facade.remover(conexao, memCod));
     }
 
     @PostMapping

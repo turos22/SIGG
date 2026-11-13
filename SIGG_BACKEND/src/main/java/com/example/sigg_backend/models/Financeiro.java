@@ -20,6 +20,10 @@ public class Financeiro {
         return new FinanceiroDAO().get(conexao);
     }
 
+    public boolean apagar(Conexao conexao) {
+        return new FinanceiroDAO().apagar(conexao, this);
+    }
+
     public boolean existe(Conexao conexao, int memCod) {
         return new FinanceiroDAO().existe(conexao, memCod);
     }

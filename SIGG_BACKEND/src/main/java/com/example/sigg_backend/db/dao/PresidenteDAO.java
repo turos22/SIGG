@@ -7,6 +7,7 @@ import com.example.sigg_backend.models.Presidente;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +52,21 @@ public class PresidenteDAO implements IDAO<Presidente> {
     public Presidente get(Conexao conexao, int id){
         List<Presidente> presidentes = buscar(conexao, "AND pr.mem_cod = ?", id);
         return presidentes.isEmpty() ? null : presidentes.get(0);
+    }
+
+    // Gestões que cobrem hoje; a lista traz quem exerce o cargo agora
+    public List<Presidente> vigentes(Conexao conexao){
+        return buscar(conexao, "AND pr.pres_gestao_ini <= CURRENT_DATE AND pr.pres_gestao_fim >= CURRENT_DATE");
+    }
+
+    // Só as datas da gestão: o alterar() acima também reescreve a pessoa e o escoteiro
+    public boolean atualizarGestao(Conexao conexao, Presidente presidente){
+        return conexao.manipular("UPDATE presidente SET pres_gestao_ini = ?, pres_gestao_fim = ? WHERE mem_cod = ?",
+                presidente.getGestao_ini(), presidente.getGestao_fim(), presidente.getMembro().getMem_cod());
+    }
+
+    public boolean encerrarGestao(Conexao conexao, int memCod, LocalDate fim){
+        return conexao.manipular("UPDATE presidente SET pres_gestao_fim = ? WHERE mem_cod = ?", fim, memCod);
     }
 
     public boolean existe(Conexao conexao, int memCod){
