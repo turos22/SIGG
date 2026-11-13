@@ -29,7 +29,7 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
 
     @Override
     public boolean gravar(Conexao conexao, TipoAtividade tipo) {
-        int ultimo = conexao.getMaxPK("tipo_atividade", "atv_cod");
+        int ultimo = conexao.getMaxPK("tipo_atividade", "ta_cod");
         int novoCod = (ultimo < 0) ? 1 : ultimo + 1;
         tipo.setTa_cod(novoCod);
 
