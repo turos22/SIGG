@@ -1661,3 +1661,25 @@ ALTER TABLE atividade_especial ADD CONSTRAINT atividade_especial_prazo_ck
     CHECK ( atv_prazo_interesse IS NULL OR atv_prazo_interesse <= atv_data );
 
 COMMIT;
+
+-- ============================================================================
+-- TIPO_ATIVIDADE (Matheus): tabela de domínio dos tipos de atividade e o vínculo com
+-- atividade_especial. As atividades já cadastradas ficam com tipo_atividade_ta_cod NULL.
+-- ============================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS tipo_atividade (
+    ta_cod INTEGER PRIMARY KEY,
+    ta_desc VARCHAR(100) NOT NULL
+);
+
+ALTER TABLE atividade_especial
+    ADD COLUMN IF NOT EXISTS tipo_atividade_ta_cod INTEGER REFERENCES tipo_atividade(ta_cod);
+
+INSERT INTO tipo_atividade (ta_cod, ta_desc) VALUES
+    (1, 'Acampamento'),
+    (2, 'Excursão / Passeio'),
+    (3, 'Jamboree / Evento Regional')
+ON CONFLICT (ta_cod) DO NOTHING;
+
+COMMIT;
