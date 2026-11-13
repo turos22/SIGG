@@ -21,7 +21,7 @@ interface Grupo {
 
 const GRUPOS: Grupo[] = [
   { id: 'inicio', rotulo: 'Início', icone: 'inicio', sub: [{ rotulo: 'Painel do grupo', to: '/' }, { rotulo: 'Avisos' }, { rotulo: 'Aniversariantes' }] },
-  { id: 'membros', rotulo: 'Membros', icone: 'responsaveis', sub: [{ rotulo: 'Listar membros', to: '/membros' }, { rotulo: 'Voluntários', to: '/voluntarios' }] },
+  { id: 'membros', rotulo: 'Membros', icone: 'responsaveis', sub: [{ rotulo: 'Listar membros', to: '/membros' }, { rotulo: 'Escoteiros', to: '/escoteiros' }, { rotulo: 'Voluntários', to: '/voluntarios' }] },
   { id: 'tropa', rotulo: 'Tropa', icone: 'tropa', sub: [{ rotulo: 'Gerenciar tropas', to: '/tropa' }] },
   { id: 'financeiro', rotulo: 'Financeiro', icone: 'financeiro', sub: [{ rotulo: 'Mensalidades', to: '/mensalidades' }, { rotulo: 'Contribuições (Anjos)', to: '/contribuicoes' }, { rotulo: 'Tipos de Atividade', to: '/tipos-atividade' }, { rotulo: 'Categorias de Mensalidade', to: '/categorias-mensalidade' }, { rotulo: 'Pagamento de Mensalidades', to: '/pagamentos-mensalidade' }, { rotulo: 'Pagamento de Atividades', to: '/pagamentos-atividade' }, ], },
   { id: 'atividades', rotulo: 'Atividades', icone: 'frequencia', sub: [{ rotulo: 'Ofertar atividades pagas', to: '/atividades-pagas' }] },
