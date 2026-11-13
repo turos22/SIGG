@@ -5,6 +5,7 @@ import com.example.sigg_backend.db.dao.PagamentoMensalidadeDAO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
 import com.example.sigg_backend.db.util.Conexao;
 
 @SuppressWarnings("unused")
@@ -68,8 +69,12 @@ public class PagamentoMensalidade {
         return new PagamentoMensalidadeDAO().possuiMensalidadeVencidaEmAberto(conexao, escCod);
     }
 
-    public static void atualizarSituacaoFinanceiraEscoteiro(Conexao conexao, int escCod, int sitFin) {
-        new PagamentoMensalidadeDAO().atualizarSituacaoFinanceiraEscoteiro(conexao, escCod, sitFin);
+    public static List<SituacaoEscoteiro> listarSituacoes(Conexao conexao, Integer troCod) {
+        return new PagamentoMensalidadeDAO().listarSituacoes(conexao, troCod);
+    }
+
+    public static boolean atualizarSituacaoFinanceiraEscoteiro(Conexao conexao, int escCod, int sitFin) {
+        return new PagamentoMensalidadeDAO().atualizarSituacaoFinanceiraEscoteiro(conexao, escCod, sitFin);
     }
 
     public int getId() {
