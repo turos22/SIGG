@@ -29,16 +29,14 @@ public class TipoAtividadeController {
     @PostMapping
     public ResponseEntity<Object> gravar(@RequestBody TipoAtividade tipo) {
         // Validação de inputs inválidos
-        if (tipo.getAtv_nome() == null || tipo.getAtv_nome().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "O nome do tipo de atividade é obrigatório (invalid input)."));
-        }
-        if (tipo.getAtv_valor() == null || tipo.getAtv_valor().doubleValue() < 0) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "O valor informado é inválido."));
+        String problema = validarDescricao(tipo.getTa_desc());
+        if (problema != null) {
+            return ResponseEntity.badRequest().body(Map.of("erro", problema));
         }
 
-        // Validação: Não deixar repetir o nome (Exigência da professora)
-        if (TipoAtividade.existeNome(tipo.getAtv_nome(), 0)) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "Já existe um tipo de atividade cadastrado com este nome."));
+        // Validação: Não deixar repetir a descrição (Exigência da professora)
+        if (TipoAtividade.existeDescricao(tipo.getTa_desc(), 0)) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Já existe um tipo de atividade cadastrado com esta descrição."));
         }
 
         boolean sucesso = tipo.gravar();
@@ -50,16 +48,17 @@ public class TipoAtividadeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody TipoAtividade tipo) {
-        if (tipo.getAtv_nome() == null || tipo.getAtv_nome().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "O nome não pode ficar vazio (invalid input)."));
+        String problema = validarDescricao(tipo.getTa_desc());
+        if (problema != null) {
+            return ResponseEntity.badRequest().body(Map.of("erro", problema));
         }
 
-        // Validação: Não deixar repetir o nome para outro registro
-        if (TipoAtividade.existeNome(tipo.getAtv_nome(), id)) {
-            return ResponseEntity.badRequest().body(Map.of("erro", "Já existe outro tipo de atividade com este nome."));
+        // Validação: Não deixar repetir a descrição para outro registro
+        if (TipoAtividade.existeDescricao(tipo.getTa_desc(), id)) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Já existe outro tipo de atividade com esta descrição."));
         }
 
-        tipo.setAtv_cod(id);
+        tipo.setTa_cod(id);
         boolean sucesso = tipo.alterar();
         if (sucesso) {
             return ResponseEntity.ok(Map.of("mensagem", "Tipo de atividade alterado com sucesso!"));
@@ -83,5 +82,14 @@ public class TipoAtividadeController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Não é possível excluir este tipo pois existem atividades vinculadas a ele."));
         }
+    }
+
+    // ta_desc é VARCHAR(100) NOT NULL
+    private static String validarDescricao(String descricao) {
+        if (descricao == null || descricao.trim().isEmpty())
+            return "A descrição do tipo de atividade é obrigatória.";
+        if (descricao.trim().length() > 100)
+            return "A descrição deve ter até 100 caracteres.";
+        return null;
     }
 }
