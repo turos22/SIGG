@@ -1,9 +1,9 @@
 package com.example.sigg_backend.models;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import com.example.sigg_backend.db.dao.TipoAtividadeDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class TipoAtividade {
     private Integer atv_cod;
@@ -20,28 +20,28 @@ public class TipoAtividade {
     }
 
     // Métodos de negócio / persistência (Model chama o DAO)
-    public boolean gravar() {
-        return new TipoAtividadeDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new TipoAtividadeDAO().gravar(conexao, this);
     }
 
-    public boolean alterar() {
-        return new TipoAtividadeDAO().alterar(this);
+    public boolean alterar(Conexao conexao) {
+        return new TipoAtividadeDAO().alterar(conexao, this);
     }
 
-    public boolean apagar() {
-        return new TipoAtividadeDAO().apagar(this);
+    public boolean apagar(Conexao conexao) {
+        return new TipoAtividadeDAO().apagar(conexao, this);
     }
 
-    public static TipoAtividade buscarPorId(int id) {
-        return new TipoAtividadeDAO().get(id);
+    public static TipoAtividade buscarPorId(Conexao conexao, int id) {
+        return new TipoAtividadeDAO().get(conexao, id);
     }
 
-    public static List<TipoAtividade> listar(String filtro) {
-        return new TipoAtividadeDAO().get(filtro);
+    public static List<TipoAtividade> listar(Conexao conexao, String filtro) {
+        return new TipoAtividadeDAO().get(conexao, filtro);
     }
 
-    public static boolean existeNome(String nome, int excetoCod) {
-        return new TipoAtividadeDAO().existeNome(nome, excetoCod);
+    public static boolean existeNome(Conexao conexao, String nome, int excetoCod) {
+        return new TipoAtividadeDAO().existeNome(conexao, nome, excetoCod);
     }
 
     // Getters e Setters

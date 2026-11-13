@@ -3,7 +3,6 @@ package com.example.sigg_backend.db.dao;
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Chefe;
 import com.example.sigg_backend.models.Tropa;
 
@@ -15,12 +14,11 @@ import java.util.List;
 public class ChefeDAO implements IDAO<Chefe> {
 
     @Override
-    public boolean gravar(Chefe chefe){
+    public boolean gravar(Conexao conexao, Chefe chefe){
         EscoteiroDAO escoteiroDAO = new EscoteiroDAO();
         int memCod = chefe.getMembro().getMem_cod();
-        if ((memCod == 0 || !escoteiroDAO.existe(memCod)) && !escoteiroDAO.gravar(chefe))
+        if ((memCod == 0 || !escoteiroDAO.existe(conexao, memCod)) && !escoteiroDAO.gravar(conexao, chefe))
             return false;
-        Conexao conexao = SingletonDB.getConexao();
         int ultimo = conexao.getMaxPK("chefe", "chefe_cod");
         if (ultimo < 0)
             return false;
@@ -31,33 +29,33 @@ public class ChefeDAO implements IDAO<Chefe> {
                 chefe.getTropa().getCod());
     }
     @Override
-    public boolean alterar(Chefe chefe){
-        return new EscoteiroDAO().alterar(chefe) && SingletonDB.getConexao().manipular(
+    public boolean alterar(Conexao conexao, Chefe chefe){
+        return new EscoteiroDAO().alterar(conexao, chefe) && conexao.manipular(
                 "UPDATE chefe SET chefe_gestao_ini = ?, chefe_gestao_fim = ?, tropa_tro_cod = ? WHERE mem_cod = ?",
                 chefe.getGestao_ini(), chefe.getGestao_fim(), chefe.getTropa().getCod(), chefe.getMembro().getMem_cod());
     }
 
     @Override
-    public boolean apagar(Chefe chefe){
-        return SingletonDB.getConexao().manipular("DELETE FROM chefe WHERE mem_cod = ?", chefe.getMembro().getMem_cod());
+    public boolean apagar(Conexao conexao, Chefe chefe){
+        return conexao.manipular("DELETE FROM chefe WHERE mem_cod = ?", chefe.getMembro().getMem_cod());
     }
     @Override
-    public List<Chefe> get(){
-        return buscar("");
+    public List<Chefe> get(Conexao conexao){
+        return buscar(conexao, "");
     }
     @Override
-    public List<Chefe> get(String filtro){
-        return buscar("AND m.mem_nome ILIKE ?", "%" + filtro + "%");
+    public List<Chefe> get(Conexao conexao, String filtro){
+        return buscar(conexao, "AND m.mem_nome ILIKE ?", "%" + filtro + "%");
     }
 
     @Override
-    public Chefe get(int id){
-        List<Chefe> chefes = buscar("AND c.mem_cod = ?", id);
+    public Chefe get(Conexao conexao, int id){
+        List<Chefe> chefes = buscar(conexao, "AND c.mem_cod = ?", id);
         return chefes.isEmpty() ? null : chefes.get(0);
     }
 
-    public boolean existe(int memCod){
-        ResultSet rs = SingletonDB.getConexao().consultar("SELECT 1 FROM chefe WHERE mem_cod = ?", memCod);
+    public boolean existe(Conexao conexao, int memCod){
+        ResultSet rs = conexao.consultar("SELECT 1 FROM chefe WHERE mem_cod = ?", memCod);
         try {
             return rs != null && rs.next();
         } catch (SQLException sqlex) {
@@ -65,8 +63,8 @@ public class ChefeDAO implements IDAO<Chefe> {
         }
     }
 
-    private List<Chefe> buscar(String condicao, Object... valores){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    private List<Chefe> buscar(Conexao conexao, String condicao, Object... valores){
+        ResultSet rs = conexao.consultar(
                 "SELECT m.*, e.*, p.pat_nome, c.chefe_cod, c.chefe_gestao_ini, c.chefe_gestao_fim,"
                         + " c.tropa_tro_cod AS chefe_tro_cod, t.tro_nome AS chefe_tro_nome"
                         + " FROM chefe c"

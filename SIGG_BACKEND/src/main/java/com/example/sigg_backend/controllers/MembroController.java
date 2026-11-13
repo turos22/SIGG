@@ -12,18 +12,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.example.sigg_backend.db.util.Conexao;
 
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"})
 @RestController
 @RequestMapping("/membros")
 public class MembroController {
 
+    private final Conexao conexao;
     private final EscoteiroFacade escoteiroFacade;
     private final FinanceiroFacade financeiroFacade;
     private final ResponsavelFacade responsavelFacade;
 
-    public MembroController(EscoteiroFacade escoteiroFacade, FinanceiroFacade financeiroFacade,
+    public MembroController(Conexao conexao, EscoteiroFacade escoteiroFacade, FinanceiroFacade financeiroFacade,
                             ResponsavelFacade responsavelFacade) {
+        this.conexao = conexao;
         this.escoteiroFacade = escoteiroFacade;
         this.financeiroFacade = financeiroFacade;
         this.responsavelFacade = responsavelFacade;
@@ -31,16 +34,16 @@ public class MembroController {
 
     @PostMapping("/{id}/escoteiro")
     public ResponseEntity<Object> acrescentarEscoteiro(@PathVariable int id, @RequestBody Escoteiro dados){
-        return ResponseEntity.status(HttpStatus.CREATED).body(escoteiroFacade.acrescentar(id, dados));
+        return ResponseEntity.status(HttpStatus.CREATED).body(escoteiroFacade.acrescentar(conexao, id, dados));
     }
 
     @PostMapping("/{id}/financeiro")
     public ResponseEntity<Object> acrescentarFinanceiro(@PathVariable int id){
-        return ResponseEntity.status(HttpStatus.CREATED).body(financeiroFacade.acrescentar(id));
+        return ResponseEntity.status(HttpStatus.CREATED).body(financeiroFacade.acrescentar(conexao, id));
     }
 
     @PostMapping("/{id}/responsavel")
     public ResponseEntity<Object> acrescentarResponsavel(@PathVariable int id){
-        return ResponseEntity.status(HttpStatus.CREATED).body(responsavelFacade.acrescentar(id));
+        return ResponseEntity.status(HttpStatus.CREATED).body(responsavelFacade.acrescentar(conexao, id));
     }
 }

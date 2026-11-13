@@ -3,7 +3,6 @@ package com.example.sigg_backend.db.dao;
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.Datas;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Conta;
 
 import java.sql.ResultSet;
@@ -15,8 +14,7 @@ import java.util.List;
 public class ContaDAO implements IDAO<Conta> {
 
     @Override
-    public boolean gravar(Conta conta){
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, Conta conta){
         int ultimo = conexao.getMaxPK("conta", "cta_cod");
         if (ultimo < 0)
             return false;
@@ -27,48 +25,48 @@ public class ContaDAO implements IDAO<Conta> {
     }
 
     @Override
-    public boolean alterar(Conta conta){
-        return SingletonDB.getConexao().manipular("UPDATE conta SET cta_senha = ?, cta_situacao = ?, cta_admin = ?,"
+    public boolean alterar(Conexao conexao, Conta conta){
+        return conexao.manipular("UPDATE conta SET cta_senha = ?, cta_situacao = ?, cta_admin = ?,"
                         + " cta_tentativas = ?, cta_bloqueio_ate = ? WHERE cta_cod = ?",
                 conta.hashDaSenha(), conta.getSituacao(), conta.isAdmin(), conta.getTentativas(),
                 conta.getBloqueio_ate(), conta.getCta_cod());
     }
 
     @Override
-    public boolean apagar(Conta conta){
-        return SingletonDB.getConexao().manipular("UPDATE conta SET cta_situacao = ? WHERE cta_cod = ?",
+    public boolean apagar(Conexao conexao, Conta conta){
+        return conexao.manipular("UPDATE conta SET cta_situacao = ? WHERE cta_cod = ?",
                 Conta.INATIVA, conta.getCta_cod());
     }
 
     @Override
-    public List<Conta> get(){
-        return buscar("");
+    public List<Conta> get(Conexao conexao){
+        return buscar(conexao, "");
     }
 
     @Override
-    public List<Conta> get(String filtro){
-        return buscar("AND m.mem_nome ILIKE ?", "%" + filtro + "%");
+    public List<Conta> get(Conexao conexao, String filtro){
+        return buscar(conexao, "AND m.mem_nome ILIKE ?", "%" + filtro + "%");
     }
 
     @Override
-    public Conta get(int id){
-        return primeira(buscar("AND c.cta_cod = ?", id));
+    public Conta get(Conexao conexao, int id){
+        return primeira(buscar(conexao, "AND c.cta_cod = ?", id));
     }
 
-    public List<Conta> contasExistentes(){
-        return buscar("AND c.cta_cod IS NOT NULL");
+    public List<Conta> contasExistentes(Conexao conexao){
+        return buscar(conexao, "AND c.cta_cod IS NOT NULL");
     }
 
-    public Conta doCpf(String cpf){
-        return primeira(buscar("AND m.mem_cpf = ?", cpf));
+    public Conta doCpf(Conexao conexao, String cpf){
+        return primeira(buscar(conexao, "AND m.mem_cpf = ?", cpf));
     }
 
-    public Conta doMembro(int memCod){
-        return primeira(buscar("AND m.mem_cod = ?", memCod));
+    public Conta doMembro(Conexao conexao, int memCod){
+        return primeira(buscar(conexao, "AND m.mem_cod = ?", memCod));
     }
 
-    public int contarOutrosAdministradoresAtivos(int ctaCod){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public int contarOutrosAdministradoresAtivos(Conexao conexao, int ctaCod){
+        ResultSet rs = conexao.consultar(
                 "SELECT COUNT(*) AS total FROM conta c JOIN membro m ON m.mem_cod = c.mem_cod"
                         + " WHERE c.cta_admin AND c.cta_situacao = 'A' AND m.mem_dt_fim IS NULL AND c.cta_cod <> ?", ctaCod);
         try {
@@ -78,8 +76,8 @@ public class ContaDAO implements IDAO<Conta> {
         }
     }
 
-    public List<String> perfisDoMembro(int memCod){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public List<String> perfisDoMembro(Conexao conexao, int memCod){
+        ResultSet rs = conexao.consultar(
                 "SELECT 'PRESIDENTE' AS perfil FROM presidente WHERE mem_cod = ?"
                         + " AND pres_gestao_ini <= CURRENT_DATE AND pres_gestao_fim >= CURRENT_DATE"
                         + " UNION SELECT 'CHEFE' FROM chefe WHERE mem_cod = ?"
@@ -116,8 +114,8 @@ public class ContaDAO implements IDAO<Conta> {
         return conta;
     }
 
-    private List<Conta> buscar(String condicao, Object... valores){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    private List<Conta> buscar(Conexao conexao, String condicao, Object... valores){
+        ResultSet rs = conexao.consultar(
                 "SELECT m.*, c.cta_cod, c.cta_senha, c.cta_situacao, c.cta_admin, c.cta_tentativas,"
                         + " c.cta_bloqueio_ate, c.cta_dt_criacao"
                         + " FROM membro m LEFT JOIN conta c ON c.mem_cod = m.mem_cod"

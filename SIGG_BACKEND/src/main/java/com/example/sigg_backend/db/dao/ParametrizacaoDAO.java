@@ -3,16 +3,16 @@ package com.example.sigg_backend.db.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Parametrizacao;
+import com.example.sigg_backend.db.util.Conexao;
 
 // A tabela parametrizacao tem uma linha só (par_cod = 1): não há cadastro nem exclusão, só leitura e alteração.
 public class ParametrizacaoDAO {
 
     private static final int LINHA_UNICA = 1;
 
-    public Parametrizacao get() {
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public Parametrizacao get(Conexao conexao) {
+        ResultSet rs = conexao.consultar(
                 "SELECT par_sigla, par_nome_sistema, par_slogan, par_nome_grupo, par_endereco, par_cidade,"
                         + " par_estado, par_telefone, par_email, par_logo FROM parametrizacao WHERE par_cod = ?",
                 LINHA_UNICA);
@@ -37,8 +37,8 @@ public class ParametrizacaoDAO {
         return null;
     }
 
-    public boolean alterar(Parametrizacao p) {
-        return SingletonDB.getConexao().manipular(
+    public boolean alterar(Conexao conexao, Parametrizacao p) {
+        return conexao.manipular(
                 "UPDATE parametrizacao SET par_sigla = ?, par_nome_sistema = ?, par_slogan = ?, par_nome_grupo = ?,"
                         + " par_endereco = ?, par_cidade = ?, par_estado = ?, par_telefone = ?, par_email = ?,"
                         + " par_logo = ? WHERE par_cod = ?",

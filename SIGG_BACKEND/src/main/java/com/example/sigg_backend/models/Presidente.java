@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.PresidenteDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Presidente extends Escoteiro {
     private int pres_cod;
@@ -23,22 +24,22 @@ public class Presidente extends Escoteiro {
     }
 
     @Override
-    public boolean gravar() {
-        return new PresidenteDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new PresidenteDAO().gravar(conexao, this);
     }
 
     @Override
-    public Presidente buscar(int memCod) {
-        return new PresidenteDAO().get(memCod);
+    public Presidente buscar(Conexao conexao, int memCod) {
+        return new PresidenteDAO().get(conexao, memCod);
     }
 
     @Override
-    public boolean existe(int memCod) {
-        return new PresidenteDAO().existe(memCod);
+    public boolean existe(Conexao conexao, int memCod) {
+        return new PresidenteDAO().existe(conexao, memCod);
     }
 
-    public List<Presidente> listarPresidentes() {
-        return new PresidenteDAO().get();
+    public List<Presidente> listarPresidentes(Conexao conexao) {
+        return new PresidenteDAO().get(conexao);
     }
 
     public int getPres_cod() {

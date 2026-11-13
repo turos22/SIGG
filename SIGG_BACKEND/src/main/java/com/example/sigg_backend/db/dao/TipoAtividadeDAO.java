@@ -2,7 +2,6 @@ package com.example.sigg_backend.db.dao;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.TipoAtividade;
 
 import java.math.BigDecimal;
@@ -15,8 +14,7 @@ import java.util.List;
 public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
 
     // Valida se já existe um tipo de atividade com o mesmo nome
-    public boolean existeNome(String nome, int excetoCod) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean existeNome(Conexao conexao, String nome, int excetoCod) {
         ResultSet rs = conexao.consultar(
                 "SELECT COUNT(*) AS total FROM tipo_atividade WHERE LOWER(atv_nome) = LOWER(?) AND atv_cod <> ?",
                 nome.trim(), excetoCod
@@ -32,8 +30,7 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
     }
 
     @Override
-    public boolean gravar(TipoAtividade tipo) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, TipoAtividade tipo) {
         int ultimo = conexao.getMaxPK("tipo_atividade", "atv_cod");
         int novoCod = (ultimo < 0) ? 1 : ultimo + 1;
         tipo.setAtv_cod(novoCod);
@@ -47,8 +44,7 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
     }
 
     @Override
-    public boolean alterar(TipoAtividade tipo) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean alterar(Conexao conexao, TipoAtividade tipo) {
         return conexao.manipular(
                 "UPDATE tipo_atividade SET atv_nome = ?, atv_valor = ? WHERE atv_cod = ?",
                 tipo.getAtv_nome().trim(),
@@ -58,8 +54,7 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
     }
 
     @Override
-    public boolean apagar(TipoAtividade tipo) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean apagar(Conexao conexao, TipoAtividade tipo) {
         return conexao.manipular(
                 "DELETE FROM tipo_atividade WHERE atv_cod = ?",
                 tipo.getAtv_cod()
@@ -67,21 +62,21 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
     }
 
     @Override
-    public List<TipoAtividade> get() {
-        return get("");
+    public List<TipoAtividade> get(Conexao conexao) {
+        return get(conexao, "");
     }
 
     @Override
-    public List<TipoAtividade> get(String filtro) {
+    public List<TipoAtividade> get(Conexao conexao, String filtro) {
         String sql = "SELECT atv_cod, atv_nome, atv_valor FROM tipo_atividade";
         ResultSet rs;
 
         if (filtro != null && !filtro.trim().isEmpty()) {
             sql += " WHERE atv_nome ILIKE ? ORDER BY atv_cod";
-            rs = SingletonDB.getConexao().consultar(sql, "%" + filtro.trim() + "%");
+            rs = conexao.consultar(sql, "%" + filtro.trim() + "%");
         } else {
             sql += " ORDER BY atv_cod";
-            rs = SingletonDB.getConexao().consultar(sql);
+            rs = conexao.consultar(sql);
         }
 
         List<TipoAtividade> lista = new ArrayList<>();
@@ -101,8 +96,8 @@ public class TipoAtividadeDAO implements IDAO<TipoAtividade> {
     }
 
     @Override
-    public TipoAtividade get(int id) {
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public TipoAtividade get(Conexao conexao, int id) {
+        ResultSet rs = conexao.consultar(
                 "SELECT atv_cod, atv_nome, atv_valor FROM tipo_atividade WHERE atv_cod = ?",
                 id
         );

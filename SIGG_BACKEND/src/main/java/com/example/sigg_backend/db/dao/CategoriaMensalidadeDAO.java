@@ -2,7 +2,6 @@ package com.example.sigg_backend.db.dao;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.CategoriaMensalidade;
 
 import java.math.BigDecimal;
@@ -14,8 +13,7 @@ import java.util.List;
 
 public class CategoriaMensalidadeDAO implements IDAO<CategoriaMensalidade> {
 
-    public boolean existeDescricao(String descricao, int excetoCod) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean existeDescricao(Conexao conexao, String descricao, int excetoCod) {
         ResultSet rs = conexao.consultar(
                 "SELECT COUNT(*) AS total FROM categoria_mensalidade WHERE LOWER(cat_mens_desc) = LOWER(?) AND cat_mens_cod <> ?",
                 descricao.trim(), excetoCod
@@ -31,8 +29,7 @@ public class CategoriaMensalidadeDAO implements IDAO<CategoriaMensalidade> {
     }
 
     @Override
-    public boolean gravar(CategoriaMensalidade categoria) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, CategoriaMensalidade categoria) {
         int ultimo = conexao.getMaxPK("categoria_mensalidade", "cat_mens_cod");
         int novoCod = (ultimo < 0) ? 1 : ultimo + 1;
         categoria.setCat_mens_cod(novoCod);
@@ -47,8 +44,7 @@ public class CategoriaMensalidadeDAO implements IDAO<CategoriaMensalidade> {
     }
 
     @Override
-    public boolean alterar(CategoriaMensalidade categoria) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean alterar(Conexao conexao, CategoriaMensalidade categoria) {
         return conexao.manipular(
                 "UPDATE categoria_mensalidade SET cat_mens_desc = ?, cat_mens_valor = ?, cat_mens_qtd_irmao = ? WHERE cat_mens_cod = ?",
                 categoria.getDescricao().trim(),
@@ -59,8 +55,7 @@ public class CategoriaMensalidadeDAO implements IDAO<CategoriaMensalidade> {
     }
 
     @Override
-    public boolean apagar(CategoriaMensalidade categoria) {
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean apagar(Conexao conexao, CategoriaMensalidade categoria) {
         return conexao.manipular(
                 "DELETE FROM categoria_mensalidade WHERE cat_mens_cod = ?",
                 categoria.getCat_mens_cod()
@@ -68,21 +63,21 @@ public class CategoriaMensalidadeDAO implements IDAO<CategoriaMensalidade> {
     }
 
     @Override
-    public List<CategoriaMensalidade> get() {
-        return get("");
+    public List<CategoriaMensalidade> get(Conexao conexao) {
+        return get(conexao, "");
     }
 
     @Override
-    public List<CategoriaMensalidade> get(String filtro) {
+    public List<CategoriaMensalidade> get(Conexao conexao, String filtro) {
         String sql = "SELECT cat_mens_cod, cat_mens_desc, cat_mens_valor, cat_mens_qtd_irmao FROM categoria_mensalidade";
         ResultSet rs;
 
         if (filtro != null && !filtro.trim().isEmpty()) {
             sql += " WHERE cat_mens_desc ILIKE ? ORDER BY cat_mens_cod";
-            rs = SingletonDB.getConexao().consultar(sql, "%" + filtro.trim() + "%");
+            rs = conexao.consultar(sql, "%" + filtro.trim() + "%");
         } else {
             sql += " ORDER BY cat_mens_cod";
-            rs = SingletonDB.getConexao().consultar(sql);
+            rs = conexao.consultar(sql);
         }
 
         List<CategoriaMensalidade> lista = new ArrayList<>();
@@ -103,8 +98,8 @@ public class CategoriaMensalidadeDAO implements IDAO<CategoriaMensalidade> {
     }
 
     @Override
-    public CategoriaMensalidade get(int id) {
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    public CategoriaMensalidade get(Conexao conexao, int id) {
+        ResultSet rs = conexao.consultar(
                 "SELECT cat_mens_cod, cat_mens_desc, cat_mens_valor, cat_mens_qtd_irmao FROM categoria_mensalidade WHERE cat_mens_cod = ?",
                 id
         );

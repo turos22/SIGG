@@ -2,7 +2,6 @@ package com.example.sigg_backend.db.dao;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.TokenConta;
 
 import java.sql.ResultSet;
@@ -15,8 +14,7 @@ import java.util.List;
 public class TokenContaDAO implements IDAO<TokenConta> {
 
     @Override
-    public boolean gravar(TokenConta token){
-        Conexao conexao = SingletonDB.getConexao();
+    public boolean gravar(Conexao conexao, TokenConta token){
         int ultimo = conexao.getMaxPK("conta_token", "tok_cod");
         if (ultimo < 0)
             return false;
@@ -27,39 +25,39 @@ public class TokenContaDAO implements IDAO<TokenConta> {
     }
 
     @Override
-    public boolean alterar(TokenConta token){
-        return SingletonDB.getConexao().manipular("UPDATE conta_token SET tok_usado_em = ? WHERE tok_cod = ?",
+    public boolean alterar(Conexao conexao, TokenConta token){
+        return conexao.manipular("UPDATE conta_token SET tok_usado_em = ? WHERE tok_cod = ?",
                 token.getUsado_em(), token.getTok_cod());
     }
 
     @Override
-    public boolean apagar(TokenConta token){
-        return SingletonDB.getConexao().manipular("DELETE FROM conta_token WHERE tok_cod = ?", token.getTok_cod());
+    public boolean apagar(Conexao conexao, TokenConta token){
+        return conexao.manipular("DELETE FROM conta_token WHERE tok_cod = ?", token.getTok_cod());
     }
 
     @Override
-    public List<TokenConta> get(){
-        return buscar("");
+    public List<TokenConta> get(Conexao conexao){
+        return buscar(conexao, "");
     }
 
     @Override
-    public List<TokenConta> get(String filtro){
+    public List<TokenConta> get(Conexao conexao, String filtro){
         throw new UnsupportedOperationException("Filtro de token não implementado");
     }
 
     @Override
-    public TokenConta get(int id){
-        List<TokenConta> tokens = buscar("WHERE t.tok_cod = ?", id);
+    public TokenConta get(Conexao conexao, int id){
+        List<TokenConta> tokens = buscar(conexao, "WHERE t.tok_cod = ?", id);
         return tokens.isEmpty() ? null : tokens.get(0);
     }
 
-    public TokenConta doHash(String hash, String tipo){
-        List<TokenConta> tokens = buscar("WHERE t.tok_hash = ? AND t.tok_tipo = ?", hash, tipo);
+    public TokenConta doHash(Conexao conexao, String hash, String tipo){
+        List<TokenConta> tokens = buscar(conexao, "WHERE t.tok_hash = ? AND t.tok_tipo = ?", hash, tipo);
         return tokens.isEmpty() ? null : tokens.get(0);
     }
 
-    public boolean invalidarAnteriores(int ctaCod, String tipo, LocalDateTime agora){
-        return SingletonDB.getConexao().manipular("UPDATE conta_token SET tok_usado_em = ?"
+    public boolean invalidarAnteriores(Conexao conexao, int ctaCod, String tipo, LocalDateTime agora){
+        return conexao.manipular("UPDATE conta_token SET tok_usado_em = ?"
                 + " WHERE cta_cod = ? AND tok_tipo = ? AND tok_usado_em IS NULL", agora, ctaCod, tipo);
     }
 
@@ -76,8 +74,8 @@ public class TokenContaDAO implements IDAO<TokenConta> {
         return token;
     }
 
-    private List<TokenConta> buscar(String condicao, Object... valores){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    private List<TokenConta> buscar(Conexao conexao, String condicao, Object... valores){
+        ResultSet rs = conexao.consultar(
                 "SELECT t.* FROM conta_token t " + condicao + " ORDER BY t.tok_cod", valores);
         List<TokenConta> tokens = new ArrayList<>();
         try {

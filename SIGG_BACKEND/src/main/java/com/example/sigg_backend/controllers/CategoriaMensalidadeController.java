@@ -6,19 +6,25 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import com.example.sigg_backend.db.util.Conexao;
 
 @RestController
 @RequestMapping("/categorias-mensalidade")
 public class CategoriaMensalidadeController {
 
+    private final Conexao conexao;
+    public CategoriaMensalidadeController(Conexao conexao) {
+        this.conexao = conexao;
+    }
+
     @GetMapping
     public List<CategoriaMensalidade> listar(@RequestParam(required = false) String filtro) {
-        return CategoriaMensalidade.listar(filtro);
+        return CategoriaMensalidade.listar(conexao, filtro);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> buscarPorId(@PathVariable int id) {
-        CategoriaMensalidade cat = CategoriaMensalidade.buscarPorId(id);
+        CategoriaMensalidade cat = CategoriaMensalidade.buscarPorId(conexao, id);
         if (cat == null) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Categoria não encontrada."));
         }
@@ -36,11 +42,11 @@ public class CategoriaMensalidadeController {
         if (categoria.getQtd_irmao() < 0) {
             return ResponseEntity.badRequest().body(Map.of("erro", "A quantidade de irmãos não pode ser negativa."));
         }
-        if (CategoriaMensalidade.descricaoJaExiste(categoria.getDescricao(), 0)) {
+        if (CategoriaMensalidade.descricaoJaExiste(conexao, categoria.getDescricao(), 0)) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Já existe uma categoria de mensalidade com essa descrição."));
         }
 
-        boolean sucesso = categoria.gravar();
+        boolean sucesso = categoria.gravar(conexao);
         if (sucesso) {
             return ResponseEntity.ok(Map.of("mensagem", "Categoria gravada com sucesso!"));
         }
@@ -58,12 +64,12 @@ public class CategoriaMensalidadeController {
         if (categoria.getQtd_irmao() < 0) {
             return ResponseEntity.badRequest().body(Map.of("erro", "A quantidade de irmãos não pode ser negativa."));
         }
-        if (CategoriaMensalidade.descricaoJaExiste(categoria.getDescricao(), id)) {
+        if (CategoriaMensalidade.descricaoJaExiste(conexao, categoria.getDescricao(), id)) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Já existe outra categoria de mensalidade com essa descrição."));
         }
 
         categoria.setCat_mens_cod(id);
-        boolean sucesso = categoria.alterar();
+        boolean sucesso = categoria.alterar(conexao);
         if (sucesso) {
             return ResponseEntity.ok(Map.of("mensagem", "Categoria alterada com sucesso!"));
         }
@@ -72,12 +78,12 @@ public class CategoriaMensalidadeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> apagar(@PathVariable int id) {
-        CategoriaMensalidade cat = CategoriaMensalidade.buscarPorId(id);
+        CategoriaMensalidade cat = CategoriaMensalidade.buscarPorId(conexao, id);
         if (cat == null) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Categoria não encontrada."));
         }
 
-        boolean sucesso = cat.apagar();
+        boolean sucesso = cat.apagar(conexao);
         if (sucesso) {
             return ResponseEntity.ok(Map.of("mensagem", "Categoria excluída com sucesso!"));
         }

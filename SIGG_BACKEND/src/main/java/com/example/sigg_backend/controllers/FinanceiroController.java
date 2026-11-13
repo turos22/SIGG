@@ -10,25 +10,28 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.example.sigg_backend.db.util.Conexao;
 
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"})
 @RestController
 @RequestMapping("/financeiros")
 public class FinanceiroController {
 
+    private final Conexao conexao;
     private final FinanceiroFacade facade;
 
-    public FinanceiroController(FinanceiroFacade facade) {
+    public FinanceiroController(Conexao conexao, FinanceiroFacade facade) {
+        this.conexao = conexao;
         this.facade = facade;
     }
 
     @GetMapping
     public ResponseEntity<Object> listar(){
-        return ResponseEntity.ok(facade.listar());
+        return ResponseEntity.ok(new Financeiro().listar(conexao));
     }
 
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Financeiro financeiro){
-        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(financeiro));
+        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, financeiro));
     }
 }

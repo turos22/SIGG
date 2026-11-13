@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 
 import com.example.sigg_backend.db.dao.TokenContaDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class TokenConta {
     public static final String CONFIRMACAO = "CONFIRMACAO";
@@ -47,24 +48,24 @@ public class TokenConta {
         return usado_em == null && expira != null && agora.isBefore(expira);
     }
 
-    public boolean gravar() {
-        return new TokenContaDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new TokenContaDAO().gravar(conexao, this);
     }
 
-    public boolean marcarComoUsado(LocalDateTime agora) {
+    public boolean marcarComoUsado(Conexao conexao, LocalDateTime agora) {
         usado_em = agora;
-        return new TokenContaDAO().alterar(this);
+        return new TokenContaDAO().alterar(conexao, this);
     }
 
-    public TokenConta buscarValido(String tokenPuro, String tipoEsperado, LocalDateTime agora) {
+    public TokenConta buscarValido(Conexao conexao, String tokenPuro, String tipoEsperado, LocalDateTime agora) {
         if (tokenPuro == null || tokenPuro.isBlank())
             return null;
-        TokenConta token = new TokenContaDAO().doHash(hashDe(tokenPuro.trim()), tipoEsperado);
+        TokenConta token = new TokenContaDAO().doHash(conexao, hashDe(tokenPuro.trim()), tipoEsperado);
         return token != null && token.estaValido(agora) ? token : null;
     }
 
-    public boolean invalidarAnteriores(int ctaCod, String tipoDoToken, LocalDateTime agora) {
-        return new TokenContaDAO().invalidarAnteriores(ctaCod, tipoDoToken, agora);
+    public boolean invalidarAnteriores(Conexao conexao, int ctaCod, String tipoDoToken, LocalDateTime agora) {
+        return new TokenContaDAO().invalidarAnteriores(conexao, ctaCod, tipoDoToken, agora);
     }
 
     public int getTok_cod() {

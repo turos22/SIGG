@@ -6,20 +6,26 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import com.example.sigg_backend.db.util.Conexao;
 
 @RestController
 @RequestMapping("/tipos-atividade")
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"}, allowCredentials = "true")
 public class TipoAtividadeController {
 
+    private final Conexao conexao;
+    public TipoAtividadeController(Conexao conexao) {
+        this.conexao = conexao;
+    }
+
     @GetMapping
     public List<TipoAtividade> listar(@RequestParam(required = false) String filtro) {
-        return TipoAtividade.listar(filtro);
+        return TipoAtividade.listar(conexao, filtro);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> buscarPorId(@PathVariable int id) {
-        TipoAtividade tipo = TipoAtividade.buscarPorId(id);
+        TipoAtividade tipo = TipoAtividade.buscarPorId(conexao, id);
         if (tipo == null) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Tipo de atividade não encontrado."));
         }
@@ -37,11 +43,11 @@ public class TipoAtividadeController {
         }
 
         // Validação: Não deixar repetir o nome (Exigência da professora)
-        if (TipoAtividade.existeNome(tipo.getAtv_nome(), 0)) {
+        if (TipoAtividade.existeNome(conexao, tipo.getAtv_nome(), 0)) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Já existe um tipo de atividade cadastrado com este nome."));
         }
 
-        boolean sucesso = tipo.gravar();
+        boolean sucesso = tipo.gravar(conexao);
         if (sucesso) {
             return ResponseEntity.ok(Map.of("mensagem", "Tipo de atividade gravado com sucesso!"));
         }
@@ -55,12 +61,12 @@ public class TipoAtividadeController {
         }
 
         // Validação: Não deixar repetir o nome para outro registro
-        if (TipoAtividade.existeNome(tipo.getAtv_nome(), id)) {
+        if (TipoAtividade.existeNome(conexao, tipo.getAtv_nome(), id)) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Já existe outro tipo de atividade com este nome."));
         }
 
         tipo.setAtv_cod(id);
-        boolean sucesso = tipo.alterar();
+        boolean sucesso = tipo.alterar(conexao);
         if (sucesso) {
             return ResponseEntity.ok(Map.of("mensagem", "Tipo de atividade alterado com sucesso!"));
         }
@@ -69,13 +75,13 @@ public class TipoAtividadeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> apagar(@PathVariable int id) {
-        TipoAtividade tipo = TipoAtividade.buscarPorId(id);
+        TipoAtividade tipo = TipoAtividade.buscarPorId(conexao, id);
         if (tipo == null) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Tipo de atividade não encontrado."));
         }
 
         try {
-            boolean sucesso = tipo.apagar();
+            boolean sucesso = tipo.apagar(conexao);
             if (sucesso) {
                 return ResponseEntity.ok(Map.of("mensagem", "Tipo de atividade excluído com sucesso!"));
             }

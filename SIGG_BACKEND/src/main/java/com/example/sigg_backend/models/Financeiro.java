@@ -3,6 +3,7 @@ package com.example.sigg_backend.models;
 import java.util.List;
 
 import com.example.sigg_backend.db.dao.FinanceiroDAO;
+import com.example.sigg_backend.db.util.Conexao;
 
 public class Financeiro {
     private Membro membro;
@@ -11,16 +12,16 @@ public class Financeiro {
     public Financeiro() {
     }
 
-    public boolean gravar() {
-        return new FinanceiroDAO().gravar(this);
+    public boolean gravar(Conexao conexao) {
+        return new FinanceiroDAO().gravar(conexao, this);
     }
 
-    public List<Financeiro> listar() {
-        return new FinanceiroDAO().get();
+    public List<Financeiro> listar(Conexao conexao) {
+        return new FinanceiroDAO().get(conexao);
     }
 
-    public boolean existe(int memCod) {
-        return new FinanceiroDAO().existe(memCod);
+    public boolean existe(Conexao conexao, int memCod) {
+        return new FinanceiroDAO().existe(conexao, memCod);
     }
 
     public Membro getMembro() {

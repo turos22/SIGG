@@ -2,7 +2,6 @@ package com.example.sigg_backend.db.dao;
 
 import com.example.sigg_backend.db.util.Conexao;
 import com.example.sigg_backend.db.util.IDAO;
-import com.example.sigg_backend.db.util.SingletonDB;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.Membro;
 import com.example.sigg_backend.models.Patrulha;
@@ -14,11 +13,10 @@ import java.util.List;
 
 public class EscoteiroDAO implements IDAO<Escoteiro> {
     @Override
-    public boolean gravar(Escoteiro escoteiro){
+    public boolean gravar(Conexao conexao, Escoteiro escoteiro){
         Membro membro = escoteiro.getMembro();
-        if (membro.getMem_cod() == 0 && !new MembroDAO().gravar(membro))
+        if (membro.getMem_cod() == 0 && !new MembroDAO().gravar(conexao, membro))
             return false;
-        Conexao conexao = SingletonDB.getConexao();
         int ultimo = conexao.getMaxPK("escoteiro", "esc_cod");
         if (ultimo < 0)
             return false;
@@ -31,8 +29,8 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
                 escoteiro.getPatrulha().getCod(), escoteiro.getEsc_sit_fin());
     }
     @Override
-    public boolean alterar(Escoteiro escoteiro){
-        return new MembroDAO().alterar(escoteiro.getMembro()) && SingletonDB.getConexao().manipular(
+    public boolean alterar(Conexao conexao, Escoteiro escoteiro){
+        return new MembroDAO().alterar(conexao, escoteiro.getMembro()) && conexao.manipular(
                 "UPDATE escoteiro SET categoria_mensalidade_cat_mens_cod = ?, escoteiro_esc_cod = ?, patrulha_pat_cod2 = ?,"
                         + " esc_sit_fin = ? WHERE mem_cod = ?",
                 escoteiro.getCat_mensalidade(), escoteiro.getAnjo(), escoteiro.getPatrulha().getCod(),
@@ -40,31 +38,31 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
     }
 
     @Override
-    public boolean apagar(Escoteiro escoteiro){
-        return SingletonDB.getConexao().manipular("DELETE FROM escoteiro WHERE mem_cod = ?",
+    public boolean apagar(Conexao conexao, Escoteiro escoteiro){
+        return conexao.manipular("DELETE FROM escoteiro WHERE mem_cod = ?",
                 escoteiro.getMembro().getMem_cod());
     }
     @Override
-    public List<Escoteiro> get(){
-        return buscar("");
+    public List<Escoteiro> get(Conexao conexao){
+        return buscar(conexao, "");
     }
     @Override
-    public List<Escoteiro> get(String filtro){
-        return buscar("AND m.mem_nome ILIKE ?", "%" + filtro + "%");
+    public List<Escoteiro> get(Conexao conexao, String filtro){
+        return buscar(conexao, "AND m.mem_nome ILIKE ?", "%" + filtro + "%");
     }
 
     @Override
-    public Escoteiro get(int id){
-        List<Escoteiro> escoteiros = buscar("AND e.mem_cod = ?", id);
+    public Escoteiro get(Conexao conexao, int id){
+        List<Escoteiro> escoteiros = buscar(conexao, "AND e.mem_cod = ?", id);
         if (escoteiros.isEmpty())
             return null;
         Escoteiro escoteiro = escoteiros.get(0);
-        escoteiro.setResponsaveis(new ResponsavelDAO().doEscoteiro(id));
+        escoteiro.setResponsaveis(new ResponsavelDAO().doEscoteiro(conexao, id));
         return escoteiro;
     }
 
-    public boolean existe(int memCod){
-        ResultSet rs = SingletonDB.getConexao().consultar("SELECT 1 FROM escoteiro WHERE mem_cod = ?", memCod);
+    public boolean existe(Conexao conexao, int memCod){
+        ResultSet rs = conexao.consultar("SELECT 1 FROM escoteiro WHERE mem_cod = ?", memCod);
         try {
             return rs != null && rs.next();
         } catch (SQLException sqlex) {
@@ -72,32 +70,32 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
         }
     }
 
-    public Escoteiro getPorCpf(String cpf){
-        List<Escoteiro> escoteiros = buscar("AND m.mem_cpf = ?", cpf);
+    public Escoteiro getPorCpf(Conexao conexao, String cpf){
+        List<Escoteiro> escoteiros = buscar(conexao, "AND m.mem_cpf = ?", cpf);
         return escoteiros.isEmpty() ? null : escoteiros.get(0);
     }
 
-    public Escoteiro getPorCodigo(int escCod){
-        List<Escoteiro> escoteiros = buscar("AND e.esc_cod = ?", escCod);
+    public Escoteiro getPorCodigo(Conexao conexao, int escCod){
+        List<Escoteiro> escoteiros = buscar(conexao, "AND e.esc_cod = ?", escCod);
         return escoteiros.isEmpty() ? null : escoteiros.get(0);
     }
 
-    public List<Escoteiro> pesquisar(String termo){
-        return buscar("AND (m.mem_cpf = ? OR m.mem_nome ILIKE ? OR CAST(e.esc_cod AS TEXT) = ?)",
+    public List<Escoteiro> pesquisar(Conexao conexao, String termo){
+        return buscar(conexao, "AND (m.mem_cpf = ? OR m.mem_nome ILIKE ? OR CAST(e.esc_cod AS TEXT) = ?)",
                 termo, "%" + termo + "%", termo);
     }
 
-    public List<Escoteiro> doResponsavel(int memCodResponsavel){
-        return buscar("AND e.mem_cod IN (SELECT er.escoteiro_mem_cod FROM escoteiro_responsavel er"
+    public List<Escoteiro> doResponsavel(Conexao conexao, int memCodResponsavel){
+        return buscar(conexao, "AND e.mem_cod IN (SELECT er.escoteiro_mem_cod FROM escoteiro_responsavel er"
                 + " WHERE er.responsável_mem_cod = ?)", memCodResponsavel);
     }
 
-    public List<Escoteiro> doAnjo(int escCodAnjo){
-        return buscar("AND e.escoteiro_esc_cod = ? AND e.esc_cod <> e.escoteiro_esc_cod", escCodAnjo);
+    public List<Escoteiro> doAnjo(Conexao conexao, int escCodAnjo){
+        return buscar(conexao, "AND e.escoteiro_esc_cod = ? AND e.esc_cod <> e.escoteiro_esc_cod", escCodAnjo);
     }
 
-    public boolean vincularAnjo(int memCod, int escCodAnjo){
-        return SingletonDB.getConexao().manipular(
+    public boolean vincularAnjo(Conexao conexao, int memCod, int escCodAnjo){
+        return conexao.manipular(
                 "UPDATE escoteiro SET escoteiro_esc_cod = ? WHERE mem_cod = ?", escCodAnjo, memCod);
     }
 
@@ -113,8 +111,8 @@ public class EscoteiroDAO implements IDAO<Escoteiro> {
         escoteiro.setPatrulha(patrulha);
     }
 
-    private List<Escoteiro> buscar(String condicao, Object... valores){
-        ResultSet rs = SingletonDB.getConexao().consultar(
+    private List<Escoteiro> buscar(Conexao conexao, String condicao, Object... valores){
+        ResultSet rs = conexao.consultar(
                 "SELECT m.*, e.*, p.pat_nome FROM escoteiro e"
                         + " JOIN membro m ON m.mem_cod = e.mem_cod"
                         + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"

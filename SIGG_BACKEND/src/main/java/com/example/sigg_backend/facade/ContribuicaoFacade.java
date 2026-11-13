@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.sigg_backend.models.Contribuicao;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.RegistroContribuicao;
+import com.example.sigg_backend.db.util.Conexao;
 
 @Service
 public class ContribuicaoFacade {
@@ -27,51 +28,51 @@ public class ContribuicaoFacade {
 
     private static final Logger LOG = LoggerFactory.getLogger(ContribuicaoFacade.class);
 
-    public List<Contribuicao> listar() {
-        autorizacao.exigirDiretoria();
-        return new Contribuicao().listar();
+    public List<Contribuicao> listar(Conexao conexao) {
+        autorizacao.exigirDiretoria(conexao);
+        return new Contribuicao().listar(conexao);
     }
 
-    public List<Contribuicao> listarDoAnjo(int memCod) {
-        autorizacao.exigirDiretoria();
-        Escoteiro anjo = new Escoteiro().buscar(memCod);
+    public List<Contribuicao> listarDoAnjo(Conexao conexao, int memCod) {
+        autorizacao.exigirDiretoria(conexao);
+        Escoteiro anjo = new Escoteiro().buscar(conexao, memCod);
         if (anjo == null)
             throw new NaoEncontradoException("Escoteiro " + memCod + " não encontrado");
-        return new Contribuicao().doAnjo(anjo.getEsc_cod());
+        return new Contribuicao().doAnjo(conexao, anjo.getEsc_cod());
     }
 
-    public Map<String, Escoteiro> verificar(String cpfAnjo, String cpfAdotado) {
-        autorizacao.exigirDiretoria();
-        Escoteiro anjo = localizar(cpfAnjo, "O Anjo");
-        Escoteiro adotado = localizar(cpfAdotado, "O adotado");
-        validarVinculo(anjo, adotado);
+    public Map<String, Escoteiro> verificar(Conexao conexao, String cpfAnjo, String cpfAdotado) {
+        autorizacao.exigirDiretoria(conexao);
+        Escoteiro anjo = localizar(conexao, cpfAnjo, "O Anjo");
+        Escoteiro adotado = localizar(conexao, cpfAdotado, "O adotado");
+        validarVinculo(conexao, anjo, adotado);
         return Map.of("anjo", anjo, "adotado", adotado);
     }
 
     @Transactional
-    public List<Contribuicao> registrar(RegistroContribuicao registro) {
-        autorizacao.exigirDiretoria();
+    public List<Contribuicao> registrar(Conexao conexao, RegistroContribuicao registro) {
+        autorizacao.exigirDiretoria(conexao);
         if (registro == null)
             throw new RegraNegocioException("Os dados da contribuição são obrigatórios");
         String problema = registro.validar();
         if (problema != null)
             throw new RegraNegocioException(problema);
-        Escoteiro anjo = localizar(registro.getCpf_anjo(), "O Anjo");
+        Escoteiro anjo = localizar(conexao, registro.getCpf_anjo(), "O Anjo");
         List<Contribuicao> registradas = new ArrayList<>();
         Set<String> vistos = new HashSet<>();
         for (String cpf : registro.getCpfs_adotados()) {
             String numeros = normalizar(cpf);
             if (!vistos.add(numeros))
                 throw new RegraNegocioException("CPF " + numeros + " repetido na lista de adotados");
-            Escoteiro adotado = localizar(numeros, "O adotado");
-            validarVinculo(anjo, adotado);
-            registradas.add(vincular(anjo, adotado));
+            Escoteiro adotado = localizar(conexao, numeros, "O adotado");
+            validarVinculo(conexao, anjo, adotado);
+            registradas.add(vincular(conexao, anjo, adotado));
         }
         return registradas;
     }
 
-    private Contribuicao vincular(Escoteiro anjo, Escoteiro adotado) {
-        if (!adotado.vincularAnjo(anjo.getEsc_cod())) {
+    private Contribuicao vincular(Conexao conexao, Escoteiro anjo, Escoteiro adotado) {
+        if (!adotado.vincularAnjo(conexao, anjo.getEsc_cod())) {
             LOG.error("Falha ao vincular o adotado {} ao Anjo {}", adotado.getEsc_cod(), anjo.getEsc_cod());
             throw new IllegalStateException("Erro ao vincular as mensalidades de "
                     + adotado.getMembro().getNome() + " ao cadastro de " + anjo.getMembro().getNome());
@@ -85,7 +86,7 @@ public class ContribuicaoFacade {
         String problema = contribuicao.validar();
         if (problema != null)
             throw new RegraNegocioException(problema);
-        if (!contribuicao.gravar()) {
+        if (!contribuicao.gravar(conexao)) {
             LOG.error("Falha ao registrar a contribuição do Anjo {} para o adotado {}",
                     anjo.getEsc_cod(), adotado.getEsc_cod());
             throw new IllegalStateException("Erro ao registrar a contribuição de " + anjo.getMembro().getNome());
@@ -93,8 +94,8 @@ public class ContribuicaoFacade {
         return contribuicao;
     }
 
-    private Escoteiro localizar(String cpf, String papel) {
-        Escoteiro escoteiro = new Escoteiro().buscarPorCpf(normalizar(cpf));
+    private Escoteiro localizar(Conexao conexao, String cpf, String papel) {
+        Escoteiro escoteiro = new Escoteiro().buscarPorCpf(conexao, normalizar(cpf));
         if (escoteiro == null)
             throw new NaoEncontradoException(papel + " não está cadastrado");
         return escoteiro;
@@ -107,7 +108,7 @@ public class ContribuicaoFacade {
         return numeros;
     }
 
-    private void validarVinculo(Escoteiro anjo, Escoteiro adotado) {
+    private void validarVinculo(Conexao conexao, Escoteiro anjo, Escoteiro adotado) {
         if (anjo.getEsc_cod() == adotado.getEsc_cod())
             throw new RegraNegocioException("O Anjo não pode apadrinhar a si mesmo");
         if (anjo.ehAdotado())
@@ -117,7 +118,7 @@ public class ContribuicaoFacade {
                 throw new RegraNegocioException(adotado.getMembro().getNome() + " já é adotado por este Anjo");
             throw new RegraNegocioException(adotado.getMembro().getNome() + " já possui um Anjo");
         }
-        if (!adotado.adotados().isEmpty())
+        if (!adotado.adotados(conexao).isEmpty())
             throw new RegraNegocioException(adotado.getMembro().getNome() + " é Anjo de outros escoteiros e não pode ser adotado");
     }
 }

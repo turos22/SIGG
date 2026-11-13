@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.sigg_backend.facade.AtividadePagaFacade;
 import com.example.sigg_backend.models.AtividadePaga;
+import com.example.sigg_backend.db.util.Conexao;
 
 // RF_F5 Ofertar Novas Atividades Pagas
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"})
@@ -20,24 +21,26 @@ import com.example.sigg_backend.models.AtividadePaga;
 @RequestMapping("/atividades-pagas")
 public class AtividadePagaController {
 
+    private final Conexao conexao;
     private final AtividadePagaFacade facade;
 
-    public AtividadePagaController(AtividadePagaFacade facade) {
+    public AtividadePagaController(Conexao conexao, AtividadePagaFacade facade) {
+        this.conexao = conexao;
         this.facade = facade;
     }
 
     @GetMapping
     public ResponseEntity<Object> listar(@RequestParam(defaultValue = "false") boolean abertas) {
-        return ResponseEntity.ok(facade.listar(abertas));
+        return ResponseEntity.ok(facade.listar(conexao, abertas));
     }
 
     @GetMapping("/{codigo}")
     public ResponseEntity<Object> buscar(@PathVariable int codigo) {
-        return ResponseEntity.ok(facade.buscar(codigo));
+        return ResponseEntity.ok(facade.buscar(conexao, codigo));
     }
 
     @PostMapping
     public ResponseEntity<Object> ofertar(@RequestBody AtividadePaga atividade) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(facade.ofertar(atividade));
+        return ResponseEntity.status(HttpStatus.CREATED).body(facade.ofertar(conexao, atividade));
     }
 }
