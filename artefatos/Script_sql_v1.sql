@@ -2035,3 +2035,24 @@ WHERE cat_mens_desc IS NULL;
 ALTER TABLE categoria_mensalidade ALTER COLUMN cat_mens_desc SET NOT NULL;
 
 COMMIT;
+
+-- ============================================================================
+-- GESTÃO DE MEMBROS E FREQUÊNCIA
+-- * patrulha: o líder passa a ser opcional (uma patrulha nova nasce antes de ter escoteiro).
+-- * frequencia: é a presença do escoteiro numa data, sem depender de atividade_especial;
+--   as linhas novas gravam atividade_especial_atv_cod NULL.
+-- * frequencia: um único registro por escoteiro e data.
+-- ============================================================================
+BEGIN;
+
+ALTER TABLE patrulha ALTER COLUMN pat_lider_cod DROP NOT NULL;
+ALTER TABLE frequencia ALTER COLUMN atividade_especial_atv_cod DROP NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'frequencia'::regclass AND conname = 'frequencia_escoteiro_data_un') THEN
+        ALTER TABLE frequencia ADD CONSTRAINT frequencia_escoteiro_data_un UNIQUE ( escoteiro_esc_cod, freq_data );
+    END IF;
+END $$;
+
+COMMIT;
