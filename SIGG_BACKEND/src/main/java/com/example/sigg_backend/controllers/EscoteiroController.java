@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.sigg_backend.db.util.Conexao;
 
@@ -35,8 +37,8 @@ public class EscoteiroController {
     }
 
     @GetMapping
-    public ResponseEntity<Object> listarTodos(){
-        return ResponseEntity.ok(new Escoteiro().listar(conexao));
+    public ResponseEntity<Object> listarTodos(@RequestParam(required = false) Integer tropa){
+        return ResponseEntity.ok(new Escoteiro().listar(conexao, tropa));
     }
 
     @GetMapping("/{id}")
@@ -47,6 +49,11 @@ public class EscoteiroController {
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Escoteiro escoteiro){
         return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, escoteiro));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody Escoteiro escoteiro){
+        return ResponseEntity.ok(facade.alterar(conexao, id, escoteiro));
     }
 
     @PostMapping("/{id}/chefe")

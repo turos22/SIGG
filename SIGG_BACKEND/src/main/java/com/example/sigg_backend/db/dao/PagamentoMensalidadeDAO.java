@@ -33,9 +33,9 @@ public class PagamentoMensalidadeDAO {
 
     public Escoteiro[] listarEscoteirosComResumo(Conexao conexao) {
         List<Escoteiro> lista = new ArrayList<>();
-        String sql = "SELECT m.*, e.*, p.pat_nome FROM escoteiro e"
+        String sql = "SELECT " + EscoteiroDAO.COLUNAS + " FROM escoteiro e"
                 + " JOIN membro m ON m.mem_cod = e.mem_cod"
-                + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                + EscoteiroDAO.JUNCAO_PATRULHA
                 + " WHERE m.mem_dt_fim IS NULL"
                 + " ORDER BY e.esc_sit_fin DESC, m.mem_nome ASC";
         try (ResultSet rs = conexao.consultar(sql)) {

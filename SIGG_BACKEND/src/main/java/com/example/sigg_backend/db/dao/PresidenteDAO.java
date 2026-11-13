@@ -65,11 +65,11 @@ public class PresidenteDAO implements IDAO<Presidente> {
 
     private List<Presidente> buscar(Conexao conexao, String condicao, Object... valores){
         ResultSet rs = conexao.consultar(
-                "SELECT m.*, e.*, p.pat_nome, pr.pres_cod, pr.pres_gestao_ini, pr.pres_gestao_fim"
+                "SELECT " + EscoteiroDAO.COLUNAS + ", pr.pres_cod, pr.pres_gestao_ini, pr.pres_gestao_fim"
                         + " FROM presidente pr"
                         + " JOIN escoteiro e ON e.mem_cod = pr.mem_cod"
                         + " JOIN membro m ON m.mem_cod = pr.mem_cod"
-                        + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                        + EscoteiroDAO.JUNCAO_PATRULHA
                         + " WHERE m.mem_dt_fim IS NULL " + condicao
                         + " ORDER BY m.mem_nome", valores);
         List<Presidente> presidentes = new ArrayList<>();

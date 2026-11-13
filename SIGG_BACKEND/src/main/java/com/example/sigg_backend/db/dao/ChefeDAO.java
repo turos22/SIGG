@@ -65,12 +65,12 @@ public class ChefeDAO implements IDAO<Chefe> {
 
     private List<Chefe> buscar(Conexao conexao, String condicao, Object... valores){
         ResultSet rs = conexao.consultar(
-                "SELECT m.*, e.*, p.pat_nome, c.chefe_cod, c.chefe_gestao_ini, c.chefe_gestao_fim,"
+                "SELECT " + EscoteiroDAO.COLUNAS + ", c.chefe_cod, c.chefe_gestao_ini, c.chefe_gestao_fim,"
                         + " c.tropa_tro_cod AS chefe_tro_cod, t.tro_nome AS chefe_tro_nome"
                         + " FROM chefe c"
                         + " JOIN escoteiro e ON e.mem_cod = c.mem_cod"
                         + " JOIN membro m ON m.mem_cod = c.mem_cod"
-                        + " JOIN patrulha p ON p.pat_cod = e.patrulha_pat_cod2"
+                        + EscoteiroDAO.JUNCAO_PATRULHA
                         + " JOIN tropa t ON t.tro_cod = c.tropa_tro_cod"
                         + " WHERE m.mem_dt_fim IS NULL " + condicao
                         + " ORDER BY m.mem_nome", valores);

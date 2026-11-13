@@ -19,8 +19,6 @@ public class Escoteiro {
     }
 
     public String validar() {
-        if (cat_mensalidade < 1 || cat_mensalidade > 5)
-            return "Categoria de mensalidade deve ser de 1 a 5";
         if (patrulha == null || patrulha.getCod() <= 0)
             return "Patrulha é obrigatória";
         return null;
@@ -32,6 +30,14 @@ public class Escoteiro {
 
     public List<Escoteiro> listar(Conexao conexao) {
         return new EscoteiroDAO().get(conexao);
+    }
+
+    public List<Escoteiro> listar(Conexao conexao, Integer troCod) {
+        return troCod == null ? listar(conexao) : new EscoteiroDAO().daTropa(conexao, troCod);
+    }
+
+    public boolean alterarCadastro(Conexao conexao) {
+        return new EscoteiroDAO().alterarCadastro(conexao, this);
     }
 
     public Escoteiro buscar(Conexao conexao, int memCod) {

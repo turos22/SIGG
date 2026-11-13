@@ -3,6 +3,7 @@ package com.example.sigg_backend;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -33,16 +34,30 @@ class AtomicidadeDoCadastroTest {
         jdbc.update("DELETE FROM membro WHERE mem_cpf = ?", CPF);
     }
 
-    @Test
-    void escoteiroComPatrulhaInexistenteNaoDeixaMembroGravado() {
-        String json = """
-                {"membro":{"nome":"Patrulha Inexistente","dt_nascto":"2013-01-01","CPF":"%s","RG":"987654321",
+    private static String escoteiro(int patrulha, String extra) {
+        return """
+                {"membro":{"nome":"Falha de Banco","dt_nascto":"2013-01-01","CPF":"%s","RG":"987654321",
                  "CEP":"19000000","endereco":"Rua Teste","endereco_num":20,"endereco_bairro":"Centro",
-                 "cidade":"Presidente Prudente","estado":"SP"},"cat_mensalidade":1,"patrulha":{"cod":99}}""".formatted(CPF);
+                 "cidade":"Presidente Prudente","estado":"SP"},"cat_mensalidade":1,"patrulha":{"cod":%d}%s}""".formatted(CPF, patrulha, extra);
+    }
 
-        // Falha do banco (FK da patrulha) não é regra de negócio: sobe como erro 500
+    // O Anjo inexistente só quebra na FK do banco, depois do membro já ter sido inserido
+    @Test
+    void escoteiroComFalhaDoBancoNaoDeixaMembroGravado() {
+        String json = escoteiro(3, ",\"anjo\":99999");
+
+        // Falha do banco não é regra de negócio: sobe como erro 500
         assertThrows(Exception.class,
                 () -> mvc.perform(post("/escoteiros").contentType(MediaType.APPLICATION_JSON).content(json)));
+
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM membro WHERE mem_cpf = ?", Integer.class, CPF));
+    }
+
+    // Patrulha inexistente é validada antes de gravar qualquer coisa: 404 e nada no banco
+    @Test
+    void escoteiroComPatrulhaInexistenteDevolve404SemGravarMembro() throws Exception {
+        mvc.perform(post("/escoteiros").contentType(MediaType.APPLICATION_JSON).content(escoteiro(99, "")))
+                .andExpect(status().isNotFound());
 
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM membro WHERE mem_cpf = ?", Integer.class, CPF));
     }
