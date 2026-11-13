@@ -67,6 +67,10 @@ public class Membro {
         return valor != null && !valor.isBlank() && valor.length() <= tamanhoMaximo;
     }
 
+    public boolean maiorDeIdade() {
+        return dt_nascto != null && !dt_nascto.isAfter(LocalDate.now().minusYears(18));
+    }
+
     public boolean cpfJaCadastrado(Conexao conexao) {
         return new MembroDAO().existeCpf(conexao, CPF);
     }

@@ -3,12 +3,14 @@ package com.example.sigg_backend.controllers;
 import com.example.sigg_backend.facade.ChefeFacade;
 import com.example.sigg_backend.facade.EscoteiroFacade;
 import com.example.sigg_backend.facade.PresidenteFacade;
+import com.example.sigg_backend.facade.ResponsavelFacade;
 import com.example.sigg_backend.models.Chefe;
 import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.Presidente;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,12 +30,15 @@ public class EscoteiroController {
     private final EscoteiroFacade facade;
     private final ChefeFacade chefeFacade;
     private final PresidenteFacade presidenteFacade;
+    private final ResponsavelFacade responsavelFacade;
 
-    public EscoteiroController(Conexao conexao, EscoteiroFacade facade, ChefeFacade chefeFacade, PresidenteFacade presidenteFacade) {
+    public EscoteiroController(Conexao conexao, EscoteiroFacade facade, ChefeFacade chefeFacade, PresidenteFacade presidenteFacade,
+                               ResponsavelFacade responsavelFacade) {
         this.conexao = conexao;
         this.facade = facade;
         this.chefeFacade = chefeFacade;
         this.presidenteFacade = presidenteFacade;
+        this.responsavelFacade = responsavelFacade;
     }
 
     @GetMapping
@@ -54,6 +59,16 @@ public class EscoteiroController {
     @PutMapping("/{id}")
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody Escoteiro escoteiro){
         return ResponseEntity.ok(facade.alterar(conexao, id, escoteiro));
+    }
+
+    @PostMapping("/{id}/responsaveis/{memCodResp}")
+    public ResponseEntity<Object> vincularResponsavel(@PathVariable int id, @PathVariable int memCodResp){
+        return ResponseEntity.status(HttpStatus.CREATED).body(responsavelFacade.vincular(conexao, id, memCodResp));
+    }
+
+    @DeleteMapping("/{id}/responsaveis/{memCodResp}")
+    public ResponseEntity<Object> desvincularResponsavel(@PathVariable int id, @PathVariable int memCodResp){
+        return ResponseEntity.ok(responsavelFacade.desvincular(conexao, id, memCodResp));
     }
 
     @PostMapping("/{id}/chefe")
