@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.sigg_backend.db.util.Conexao;
+import com.example.sigg_backend.facade.RegraNegocioException;
 
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"})
 @RestController
@@ -53,11 +54,26 @@ public class EscoteiroController {
 
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Escoteiro escoteiro){
+        if (escoteiro == null)
+            throw new RegraNegocioException("Os dados do escoteiro são obrigatórios");
+        if (escoteiro.getMembro() == null)
+            throw new RegraNegocioException("Os dados do membro são obrigatórios");
+        String problema = escoteiro.getMembro().validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
+        problema = escoteiro.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
         return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, escoteiro));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody Escoteiro escoteiro){
+        if (escoteiro == null)
+            throw new RegraNegocioException("Os dados do escoteiro são obrigatórios");
+        String problema = escoteiro.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
         return ResponseEntity.ok(facade.alterar(conexao, id, escoteiro));
     }
 
@@ -73,11 +89,21 @@ public class EscoteiroController {
 
     @PostMapping("/{id}/chefe")
     public ResponseEntity<Object> promoverAChefe(@PathVariable int id, @RequestBody Chefe dados){
+        if (dados == null)
+            throw new RegraNegocioException("Os dados do chefe são obrigatórios");
+        String problema = dados.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
         return ResponseEntity.status(HttpStatus.CREATED).body(chefeFacade.promover(conexao, id, dados));
     }
 
     @PostMapping("/{id}/presidente")
     public ResponseEntity<Object> promoverAPresidente(@PathVariable int id, @RequestBody Presidente dados){
+        if (dados == null)
+            throw new RegraNegocioException("Os dados do presidente são obrigatórios");
+        String problema = dados.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
         return ResponseEntity.status(HttpStatus.CREATED).body(presidenteFacade.promover(conexao, id, dados));
     }
 }

@@ -67,7 +67,7 @@ public class ResponsavelFacade {
 
     @Transactional
     public Responsavel cadastrar(Conexao conexao, Responsavel responsavel) {
-        membroFacade.validarNovo(conexao, responsavel.getMembro());
+        membroFacade.exigirCpfLivre(conexao, responsavel.getMembro());
         gravar(conexao, responsavel);
         return responsavel;
     }

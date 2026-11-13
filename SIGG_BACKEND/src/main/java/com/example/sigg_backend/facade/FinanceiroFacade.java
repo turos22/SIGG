@@ -29,7 +29,7 @@ public class FinanceiroFacade {
     @Transactional
     public Financeiro cadastrar(Conexao conexao, Financeiro financeiro) {
         autorizacao.exigirPerfil(conexao, GESTORES);
-        membroFacade.validarNovo(conexao, financeiro.getMembro());
+        membroFacade.exigirCpfLivre(conexao, financeiro.getMembro());
         gravar(conexao, financeiro);
         return financeiro;
     }

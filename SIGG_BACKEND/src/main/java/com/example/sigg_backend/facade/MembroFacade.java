@@ -31,12 +31,8 @@ public class MembroFacade {
         return membro;
     }
 
-    public void validarNovo(Conexao conexao, Membro membro) {
-        if (membro == null)
-            throw new RegraNegocioException("Os dados do membro são obrigatórios");
-        String problema = membro.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
+    // Os campos já foram conferidos no controller; aqui o CPF único, que depende do banco
+    public void exigirCpfLivre(Conexao conexao, Membro membro) {
         if (membro.cpfJaCadastrado(conexao))
             throw new RegraNegocioException(
                     "Já existe um membro com esse CPF. Para dar outro papel a ele, use POST /membros/{id}/...");
@@ -46,7 +42,7 @@ public class MembroFacade {
     @Transactional
     public Membro cadastrar(Conexao conexao, Membro membro) {
         autorizacao.exigirDiretoria(conexao);
-        validarNovo(conexao, membro);
+        exigirCpfLivre(conexao, membro);
         if (!membro.gravar(conexao))
             throw new IllegalStateException("Não foi possível gravar o membro");
         return buscar(conexao, membro.getMem_cod());
@@ -56,11 +52,6 @@ public class MembroFacade {
     public Membro alterar(Conexao conexao, int memCod, Membro dados) {
         autorizacao.exigirDiretoria(conexao);
         Membro atual = buscarAtivo(conexao, memCod);
-        if (dados == null)
-            throw new RegraNegocioException("Os dados do membro são obrigatórios");
-        String problema = dados.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
         dados.setMem_cod(memCod);
         if (dados.cpfJaCadastradoEmOutro(conexao))
             throw new RegraNegocioException("Já existe outro membro com esse CPF");

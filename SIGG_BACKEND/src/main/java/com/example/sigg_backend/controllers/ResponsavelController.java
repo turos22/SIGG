@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.sigg_backend.db.util.Conexao;
+import com.example.sigg_backend.facade.RegraNegocioException;
 
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"})
 @RestController
@@ -33,6 +34,13 @@ public class ResponsavelController {
     // Membro novo + responsável
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Responsavel responsavel){
+        if (responsavel == null)
+            throw new RegraNegocioException("Os dados do responsável são obrigatórios");
+        if (responsavel.getMembro() == null)
+            throw new RegraNegocioException("Os dados do membro são obrigatórios");
+        String problema = responsavel.getMembro().validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
         return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, responsavel));
     }
 }

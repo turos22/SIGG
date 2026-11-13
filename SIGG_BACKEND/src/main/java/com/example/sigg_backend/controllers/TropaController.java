@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.sigg_backend.db.util.Conexao;
+import com.example.sigg_backend.facade.RegraNegocioException;
 import com.example.sigg_backend.facade.TropaFacade;
 import com.example.sigg_backend.models.Tropa;
 
@@ -41,12 +42,22 @@ public class TropaController {
 
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Tropa tropa){
-        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, tropa));
+        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, conferir(tropa)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody Tropa tropa){
-        return ResponseEntity.ok(facade.alterar(conexao, id, tropa));
+        return ResponseEntity.ok(facade.alterar(conexao, id, conferir(tropa)));
+    }
+
+    private Tropa conferir(Tropa tropa){
+        if (tropa == null)
+            throw new RegraNegocioException("Os dados da tropa são obrigatórios");
+        tropa.normalizar();
+        String problema = tropa.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
+        return tropa;
     }
 
     @DeleteMapping("/{id}")

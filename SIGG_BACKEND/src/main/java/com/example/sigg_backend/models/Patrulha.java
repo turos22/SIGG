@@ -65,6 +65,16 @@ public class Patrulha {
         this.tropa = tropa;
     }
 
+    // Tira espaços do nome e trata líder/sublíder sem código como ausentes
+    public void normalizar() {
+        if (nome != null)
+            nome = nome.trim();
+        if (lider != null && lider.getEsc_cod() <= 0)
+            lider = null;
+        if (sublider != null && sublider.getEsc_cod() <= 0)
+            sublider = null;
+    }
+
     public String validar() {
         if (nome == null || nome.isBlank() || nome.length() > 20)
             return "Nome da patrulha é obrigatório (até 20 caracteres)";

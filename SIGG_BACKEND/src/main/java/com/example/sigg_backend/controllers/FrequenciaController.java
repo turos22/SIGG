@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.sigg_backend.db.util.Conexao;
+import com.example.sigg_backend.facade.RegraNegocioException;
 import com.example.sigg_backend.facade.FrequenciaFacade;
 import com.example.sigg_backend.models.Chamada;
 
@@ -51,12 +52,21 @@ public class FrequenciaController {
 
     @PostMapping("/chamada")
     public ResponseEntity<Object> registrar(@RequestBody Chamada chamada){
-        return ResponseEntity.status(HttpStatus.CREATED).body(facade.registrar(conexao, chamada));
+        return ResponseEntity.status(HttpStatus.CREATED).body(facade.registrar(conexao, conferir(chamada)));
     }
 
     @PutMapping("/chamada")
     public ResponseEntity<Object> atualizar(@RequestBody Chamada chamada){
-        return ResponseEntity.ok(facade.atualizar(conexao, chamada));
+        return ResponseEntity.ok(facade.atualizar(conexao, conferir(chamada)));
+    }
+
+    private Chamada conferir(Chamada chamada){
+        if (chamada == null)
+            throw new RegraNegocioException("Os dados da chamada são obrigatórios");
+        String problema = chamada.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
+        return chamada;
     }
 
     @DeleteMapping("/chamada")

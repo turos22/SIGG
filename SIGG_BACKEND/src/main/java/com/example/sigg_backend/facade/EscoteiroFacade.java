@@ -31,7 +31,7 @@ public class EscoteiroFacade {
 
     @Transactional
     public Escoteiro cadastrar(Conexao conexao, Escoteiro escoteiro) {
-        membroFacade.validarNovo(conexao, escoteiro.getMembro());
+        membroFacade.exigirCpfLivre(conexao, escoteiro.getMembro());
         validar(conexao, escoteiro);
         gravar(conexao, escoteiro);
         return escoteiro;
@@ -52,8 +52,6 @@ public class EscoteiroFacade {
     public Escoteiro alterar(Conexao conexao, int memCod, Escoteiro dados) {
         autorizacao.exigirDiretoria(conexao);
         Escoteiro atual = buscar(conexao, memCod);
-        if (dados == null)
-            throw new RegraNegocioException("Os dados do escoteiro são obrigatórios");
         dados.setMembro(atual.getMembro());
         validar(conexao, dados);
         if (!dados.alterarCadastro(conexao))
@@ -61,10 +59,8 @@ public class EscoteiroFacade {
         return buscar(conexao, memCod);
     }
 
+    // Os campos já foram conferidos no controller: aqui só o que existe no banco
     private void validar(Conexao conexao, Escoteiro escoteiro) {
-        String problema = escoteiro.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
         if (CategoriaMensalidade.buscarPorId(conexao, escoteiro.getCat_mensalidade()) == null)
             throw new RegraNegocioException("Categoria de mensalidade " + escoteiro.getCat_mensalidade() + " não existe");
         if (new Patrulha().buscar(conexao, escoteiro.getPatrulha().getCod()) == null)

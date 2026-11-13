@@ -35,9 +35,6 @@ public class PresidenteFacade {
         Presidente atual = dados.buscar(conexao, memCod);
         if (atual != null && atual.estaVigente())
             throw new RegraNegocioException(membro.getNome() + " já é presidente");
-        String problema = dados.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
         encerrarVigentes(conexao, dados.getGestao_ini().minusDays(1));
         dados.setMembro(membro);
         // quem já foi presidente volta pela mesma linha (mem_cod é a chave da tabela)

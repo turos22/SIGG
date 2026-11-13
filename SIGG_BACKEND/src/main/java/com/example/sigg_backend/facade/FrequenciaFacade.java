@@ -66,7 +66,7 @@ public class FrequenciaFacade {
     @Transactional
     public Chamada registrar(Conexao conexao, Chamada chamada) {
         autorizacao.exigirPerfil(conexao, OPERADORES);
-        validar(conexao, chamada);
+        prepararChamada(conexao, chamada);
         if (chamada.temRegistro(conexao))
             throw new RegraNegocioException("Já existe frequência desta tropa nesta data. Edite a chamada existente.");
         return gravar(conexao, chamada);
@@ -75,7 +75,7 @@ public class FrequenciaFacade {
     @Transactional
     public Chamada atualizar(Conexao conexao, Chamada chamada) {
         autorizacao.exigirPerfil(conexao, OPERADORES);
-        validar(conexao, chamada);
+        prepararChamada(conexao, chamada);
         if (!chamada.temRegistro(conexao))
             throw new NaoEncontradoException(SEM_REGISTRO);
         return gravar(conexao, chamada);
@@ -101,12 +101,8 @@ public class FrequenciaFacade {
         return chamada.consultar(conexao);
     }
 
-    private void validar(Conexao conexao, Chamada chamada) {
-        if (chamada == null)
-            throw new RegraNegocioException("Os dados da chamada são obrigatórios");
-        String problema = chamada.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
+    // Data, status e itens já foram conferidos no controller: aqui a tropa e os escoteiros, que dependem do banco
+    private void prepararChamada(Conexao conexao, Chamada chamada) {
         exigirTropa(conexao, chamada.getTropa().getCod());
         chamada.setTropa(tropaExistente(conexao, chamada.getTropa().getCod()));
         Integer intruso = chamada.primeiroEscoteiroDeOutraTropa(conexao);

@@ -36,9 +36,6 @@ public class ChefeFacade {
         Chefe atual = dados.buscar(conexao, memCod);
         if (atual != null && atual.estaAtivo())
             throw new RegraNegocioException(membro.getNome() + " já é chefe");
-        String problema = dados.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
         if (new Tropa().buscar(conexao, dados.getTropa().getCod()) == null)
             throw new NaoEncontradoException("Tropa " + dados.getTropa().getCod() + " não encontrada");
         dados.setMembro(membro);

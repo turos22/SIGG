@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.sigg_backend.db.util.Conexao;
+import com.example.sigg_backend.facade.RegraNegocioException;
 import com.example.sigg_backend.facade.PatrulhaFacade;
 import com.example.sigg_backend.models.Patrulha;
 
@@ -42,12 +43,22 @@ public class PatrulhaController {
 
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Patrulha patrulha){
-        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, patrulha));
+        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, conferir(patrulha)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody Patrulha patrulha){
-        return ResponseEntity.ok(facade.alterar(conexao, id, patrulha));
+        return ResponseEntity.ok(facade.alterar(conexao, id, conferir(patrulha)));
+    }
+
+    private Patrulha conferir(Patrulha patrulha){
+        if (patrulha == null)
+            throw new RegraNegocioException("Os dados da patrulha são obrigatórios");
+        patrulha.normalizar();
+        String problema = patrulha.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
+        return patrulha;
     }
 
     @DeleteMapping("/{id}")

@@ -36,6 +36,11 @@ public class Tropa {
         this.nome = nome;
     }
 
+    public void normalizar() {
+        if (nome != null)
+            nome = nome.trim();
+    }
+
     public String validar() {
         if (nome == null || nome.isBlank() || nome.length() > 20)
             return "Nome da tropa é obrigatório (até 20 caracteres)";

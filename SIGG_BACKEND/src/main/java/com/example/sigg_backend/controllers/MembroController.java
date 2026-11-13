@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.sigg_backend.db.util.Conexao;
+import com.example.sigg_backend.facade.RegraNegocioException;
 
 @CrossOrigin(origins = {"http://127.0.0.1:5500", "http://localhost:5173"})
 @RestController
@@ -52,12 +53,12 @@ public class MembroController {
 
     @PostMapping
     public ResponseEntity<Object> cadastrar(@RequestBody Membro membro){
-        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, membro));
+        return ResponseEntity.status(HttpStatus.CREATED).body(facade.cadastrar(conexao, conferir(membro)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> alterar(@PathVariable int id, @RequestBody Membro membro){
-        return ResponseEntity.ok(facade.alterar(conexao, id, membro));
+        return ResponseEntity.ok(facade.alterar(conexao, id, conferir(membro)));
     }
 
     @DeleteMapping("/{id}")
@@ -65,9 +66,27 @@ public class MembroController {
         return ResponseEntity.ok(facade.excluir(conexao, id));
     }
 
+    private Membro conferir(Membro membro){
+        if (membro == null)
+            throw new RegraNegocioException("Os dados do membro são obrigatórios");
+        String problema = membro.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
+        return membro;
+    }
+
+    private Escoteiro conferirEscoteiro(Escoteiro dados){
+        if (dados == null)
+            throw new RegraNegocioException("Os dados do escoteiro são obrigatórios");
+        String problema = dados.validar();
+        if (problema != null)
+            throw new RegraNegocioException(problema);
+        return dados;
+    }
+
     @PostMapping("/{id}/escoteiro")
     public ResponseEntity<Object> acrescentarEscoteiro(@PathVariable int id, @RequestBody Escoteiro dados){
-        return ResponseEntity.status(HttpStatus.CREATED).body(escoteiroFacade.acrescentar(conexao, id, dados));
+        return ResponseEntity.status(HttpStatus.CREATED).body(escoteiroFacade.acrescentar(conexao, id, conferirEscoteiro(dados)));
     }
 
     @PostMapping("/{id}/financeiro")

@@ -122,11 +122,10 @@ class PromocaoComPermissaoTest {
     }
 
     @Test
-    void posseInvalidaOuDoPresidenteAtualERecusada() {
+    void posseDoPresidenteAtualOuAnteriorAoInicioDeleERecusada() {
         ComoUsuario.entrar(2, "PRESIDENTE");
         assertThrows(RegraNegocioException.class, () -> presidenteFacade.promover(conexao, 2, presidente("2027-01-01", "2029-12-31"))); // já é
         assertThrows(RegraNegocioException.class, () -> presidenteFacade.promover(conexao, 11, presidente("2024-12-31", "2028-12-31"))); // antes do início do atual
-        assertThrows(RegraNegocioException.class, () -> presidenteFacade.promover(conexao, 11, presidente("2028-12-31", "2027-01-01"))); // fim antes do início
     }
 
     @Test

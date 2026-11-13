@@ -16,7 +16,6 @@ public class SituacaoEscoteiro {
     private int mensalidades_abertas;
     private String situacao;
 
-    // esc_sit_fin = 1 vence; senão, qualquer mensalidade vencida em aberto deixa o escoteiro pendente
     public static String calcular(int escSitFin, int vencidasEmAberto) {
         if (escSitFin == 1)
             return INADIMPLENTE;

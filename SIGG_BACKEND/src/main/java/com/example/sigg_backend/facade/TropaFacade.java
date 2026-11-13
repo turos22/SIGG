@@ -31,7 +31,7 @@ public class TropaFacade {
     @Transactional
     public Tropa cadastrar(Conexao conexao, Tropa tropa) {
         autorizacao.exigirPerfil(conexao, GESTORES);
-        validar(conexao, tropa, 0);
+        exigirNomeLivre(conexao, tropa, 0);
         if (!tropa.gravar(conexao))
             throw new IllegalStateException("Não foi possível gravar a tropa");
         return tropa;
@@ -41,7 +41,7 @@ public class TropaFacade {
     public Tropa alterar(Conexao conexao, int cod, Tropa dados) {
         autorizacao.exigirPerfil(conexao, GESTORES);
         buscar(conexao, cod);
-        validar(conexao, dados, cod);
+        exigirNomeLivre(conexao, dados, cod);
         if (!dados.alterar(conexao))
             throw new IllegalStateException("Não foi possível alterar a tropa");
         return dados;
@@ -58,14 +58,7 @@ public class TropaFacade {
         return Map.of("mensagem", "Tropa " + tropa.getNome() + " excluída");
     }
 
-    private void validar(Conexao conexao, Tropa tropa, int cod) {
-        if (tropa == null)
-            throw new RegraNegocioException("Os dados da tropa são obrigatórios");
-        if (tropa.getNome() != null)
-            tropa.setNome(tropa.getNome().trim());
-        String problema = tropa.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
+    private void exigirNomeLivre(Conexao conexao, Tropa tropa, int cod) {
         tropa.setCod(cod);
         if (tropa.nomeJaUsadoPorOutra(conexao))
             throw new RegraNegocioException("Já existe uma tropa com esse nome");

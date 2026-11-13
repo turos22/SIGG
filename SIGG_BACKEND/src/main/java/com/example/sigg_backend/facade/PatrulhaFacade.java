@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.sigg_backend.db.util.Conexao;
-import com.example.sigg_backend.models.Escoteiro;
 import com.example.sigg_backend.models.Patrulha;
 import com.example.sigg_backend.models.Tropa;
 import com.example.sigg_backend.models.UsuarioLogado;
@@ -33,7 +32,7 @@ public class PatrulhaFacade {
     @Transactional
     public Patrulha cadastrar(Conexao conexao, Patrulha patrulha) {
         autorizacao.exigirPerfil(conexao, GESTORES);
-        validar(conexao, patrulha, 0);
+        prepararEIntegrantes(conexao, patrulha, 0);
         if (!patrulha.gravar(conexao))
             throw new IllegalStateException("Não foi possível gravar a patrulha");
         return buscar(conexao, patrulha.getCod());
@@ -43,7 +42,7 @@ public class PatrulhaFacade {
     public Patrulha alterar(Conexao conexao, int cod, Patrulha dados) {
         autorizacao.exigirPerfil(conexao, GESTORES);
         buscar(conexao, cod);
-        validar(conexao, dados, cod);
+        prepararEIntegrantes(conexao, dados, cod);
         if (!dados.alterar(conexao))
             throw new IllegalStateException("Não foi possível alterar a patrulha");
         return buscar(conexao, cod);
@@ -60,18 +59,8 @@ public class PatrulhaFacade {
         return Map.of("mensagem", "Patrulha " + patrulha.getNome() + " excluída");
     }
 
-    private void validar(Conexao conexao, Patrulha patrulha, int cod) {
-        if (patrulha == null)
-            throw new RegraNegocioException("Os dados da patrulha são obrigatórios");
-        if (patrulha.getNome() != null)
-            patrulha.setNome(patrulha.getNome().trim());
-        if (semCodigo(patrulha.getLider()))
-            patrulha.setLider(null);
-        if (semCodigo(patrulha.getSublider()))
-            patrulha.setSublider(null);
-        String problema = patrulha.validar();
-        if (problema != null)
-            throw new RegraNegocioException(problema);
+    // O formato do corpo já foi conferido no controller: aqui só o que depende do banco
+    private void prepararEIntegrantes(Conexao conexao, Patrulha patrulha, int cod) {
         Tropa tropa = new Tropa().buscar(conexao, patrulha.getTropa().getCod());
         if (tropa == null)
             throw new NaoEncontradoException("Tropa " + patrulha.getTropa().getCod() + " não encontrada");
@@ -81,9 +70,5 @@ public class PatrulhaFacade {
             throw new RegraNegocioException("Líder deve ser escoteiro de uma patrulha da mesma tropa");
         if (patrulha.getSublider() != null && !patrulha.escoteiroEhDaTropa(conexao, patrulha.getSublider().getEsc_cod()))
             throw new RegraNegocioException("Sublíder deve ser escoteiro de uma patrulha da mesma tropa");
-    }
-
-    private boolean semCodigo(Escoteiro escoteiro) {
-        return escoteiro != null && escoteiro.getEsc_cod() <= 0;
     }
 }
