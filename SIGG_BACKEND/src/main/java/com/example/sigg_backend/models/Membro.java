@@ -27,21 +27,37 @@ public class Membro {
     public String validar() {
         if (!texto(nome, 30))
             return "Nome é obrigatório (até 30 caracteres)";
+        if (contemDigito(nome))
+            return "Nome não pode conter números";
         if (dt_nascto == null || dt_nascto.isAfter(LocalDate.now()))
             return "Data de nascimento inválida";
         if (CPF == null || !CPF.matches("\\d{11}"))
             return "CPF deve ter 11 dígitos, só números";
+        if (!Cpf.valido(CPF))
+            return "CPF inválido";
         if (!texto(RG, 10))
             return "RG é obrigatório (até 10 caracteres)";
+        if (!RG.matches("[0-9X]+"))
+            return "RG aceita só números e a letra X";
         if (CEP == null || !CEP.matches("\\d{8}"))
             return "CEP deve ter 8 dígitos, só números";
         if (!texto(endereco, 50) || endereco_num <= 0 || !texto(endereco_bairro, 50) || !texto(cidade, 50) || !texto(estado, 30))
             return "Endereço completo é obrigatório";
+        if (contemDigito(endereco_bairro))
+            return "Bairro não pode conter números";
+        if (contemDigito(cidade))
+            return "Cidade não pode conter números";
+        if (!Uf.valida(estado))
+            return "Estado inválido";
         if (telefone != null && !telefone.matches("\\d{10,11}"))
             return "Telefone deve ter 10 ou 11 dígitos, só números";
         if (email != null && (email.length() > 40 || !email.contains("@")))
             return "E-mail inválido (até 40 caracteres)";
         return null;
+    }
+
+    private static boolean contemDigito(String valor) {
+        return valor.chars().anyMatch(Character::isDigit);
     }
 
     private static boolean texto(String valor, int tamanhoMaximo) {
