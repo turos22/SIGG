@@ -5,6 +5,7 @@ export const DIRETORIA: Perfil[] = ['ADMIN', 'PRESIDENTE', 'CHEFE', 'FINANCEIRO'
 
 export const PERMISSOES: Record<string, Perfil[] | undefined> = {
   '/membros': DIRETORIA,
+  '/frequencia': ['ADMIN', 'PRESIDENTE', 'CHEFE'],
   '/escoteiros': DIRETORIA,
   '/voluntarios': DIRETORIA,
   '/tropa': ['ADMIN', 'PRESIDENTE', 'CHEFE'],
